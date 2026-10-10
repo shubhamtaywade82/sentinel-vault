@@ -23,7 +23,7 @@ class SecretAccessEvent < ApplicationRecord
       **attributes
     )
   rescue ActiveRecord::ActiveRecordError => e
-    Rails.logger.error("[vault] audit write failed for #{action}: #{e.class}")
+    Rails.error.report(e, handled: true, context: { audit_action: action })
     raise VaultError.new(:audit_persist_failed, "Audit record could not be persisted; operation refused", details: { action: action })
   end
 

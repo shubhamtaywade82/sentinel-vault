@@ -55,7 +55,8 @@ CREATE TABLE public.connection_secret_bindings (
     integration_connection_id uuid NOT NULL,
     vault_secret_id uuid NOT NULL,
     purpose character varying NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL
+    created_at timestamp(6) without time zone NOT NULL,
+    workspace_id uuid NOT NULL
 );
 
 
@@ -149,6 +150,7 @@ CREATE TABLE public.secret_access_grants (
     permissions character varying[] DEFAULT '{}'::character varying[] NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
+    workspace_id uuid NOT NULL,
     CONSTRAINT secret_access_grants_permissions_check CHECK (((cardinality(permissions) > 0) AND (permissions <@ ARRAY['metadata:read'::character varying, 'value:read'::character varying, 'version:create'::character varying, 'rotate'::character varying, 'revoke'::character varying, 'connection:refresh'::character varying, 'audit:read'::character varying])))
 );
 
@@ -374,6 +376,13 @@ CREATE INDEX index_connection_secret_bindings_on_vault_secret_id ON public.conne
 
 
 --
+-- Name: index_integration_connections_on_id_and_workspace_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_integration_connections_on_id_and_workspace_id ON public.integration_connections USING btree (id, workspace_id);
+
+
+--
 -- Name: index_integration_connections_on_status_and_refresh_after; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -486,6 +495,13 @@ CREATE UNIQUE INDEX index_service_clients_on_credential_digest ON public.service
 
 
 --
+-- Name: index_service_clients_on_id_and_workspace_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_service_clients_on_id_and_workspace_id ON public.service_clients USING btree (id, workspace_id);
+
+
+--
 -- Name: index_service_clients_on_public_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -504,6 +520,13 @@ CREATE INDEX index_service_clients_on_workspace_id ON public.service_clients USI
 --
 
 CREATE UNIQUE INDEX index_service_clients_on_workspace_id_and_name ON public.service_clients USING btree (workspace_id, name);
+
+
+--
+-- Name: index_vault_secrets_on_id_and_workspace_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_vault_secrets_on_id_and_workspace_id ON public.vault_secrets USING btree (id, workspace_id);
 
 
 --
@@ -532,6 +555,22 @@ CREATE UNIQUE INDEX index_workspaces_on_slug ON public.workspaces USING btree (s
 --
 
 CREATE TRIGGER secret_access_events_no_mutation BEFORE DELETE OR UPDATE ON public.secret_access_events FOR EACH ROW EXECUTE FUNCTION public.secret_access_events_append_only();
+
+
+--
+-- Name: connection_secret_bindings fk_connection_secret_bindings_integration_connection_id_same_wo; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.connection_secret_bindings
+    ADD CONSTRAINT fk_connection_secret_bindings_integration_connection_id_same_wo FOREIGN KEY (integration_connection_id, workspace_id) REFERENCES public.integration_connections(id, workspace_id);
+
+
+--
+-- Name: connection_secret_bindings fk_connection_secret_bindings_vault_secret_id_same_workspace; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.connection_secret_bindings
+    ADD CONSTRAINT fk_connection_secret_bindings_vault_secret_id_same_workspace FOREIGN KEY (vault_secret_id, workspace_id) REFERENCES public.vault_secrets(id, workspace_id);
 
 
 --
@@ -639,6 +678,22 @@ ALTER TABLE ONLY public.secret_leases
 
 
 --
+-- Name: secret_access_grants fk_secret_access_grants_service_client_id_same_workspace; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.secret_access_grants
+    ADD CONSTRAINT fk_secret_access_grants_service_client_id_same_workspace FOREIGN KEY (service_client_id, workspace_id) REFERENCES public.service_clients(id, workspace_id);
+
+
+--
+-- Name: secret_access_grants fk_secret_access_grants_vault_secret_id_same_workspace; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.secret_access_grants
+    ADD CONSTRAINT fk_secret_access_grants_vault_secret_id_same_workspace FOREIGN KEY (vault_secret_id, workspace_id) REFERENCES public.vault_secrets(id, workspace_id);
+
+
+--
 -- Name: vault_secrets fk_vault_secrets_current_version_same_secret; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -653,6 +708,7 @@ ALTER TABLE ONLY public.vault_secrets
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261011000009'),
 ('20261011000008'),
 ('20261011000007'),
 ('20261011000006'),

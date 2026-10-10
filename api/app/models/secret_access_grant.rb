@@ -8,6 +8,9 @@ class SecretAccessGrant < ApplicationRecord
   validate :permissions_are_known
   validate :same_workspace
 
+  # Composite foreign keys use this to pin both client and secret to one workspace.
+  before_validation { self.workspace_id = vault_secret&.workspace_id }
+
   # Accepts the contract's comma-separated form; stores canonical order so diffs stay clean.
   def permissions=(value)
     # to_s turns non-string input (a JSON object, a number) into an unknown

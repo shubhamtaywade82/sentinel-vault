@@ -48,5 +48,10 @@ module Api
     config.active_record.schema_format = :sql
 
     config.exceptions_app = ->(env) { ErrorEnvelopeApp.call(env) }
+
+    # Rack::ETag hashes every 200/201 body into a header. For reveal and
+    # credential responses that is a fingerprint of the plaintext, which caches
+    # and proxy logs keep; this API serves no conditional GETs, so drop it.
+    config.middleware.delete Rack::ETag
   end
 end

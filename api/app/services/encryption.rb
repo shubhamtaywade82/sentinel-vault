@@ -29,9 +29,8 @@ module Encryption
       kms_key_ref: kms.key_ref,
       crypto_scheme: SCHEME
     )
-  rescue Aws::KMS::Errors::ServiceError => e
-    Rails.logger.error("[vault] KMS generate_data_key failed: #{e.class}")
-    raise VaultError.new(:provider_unavailable, "key management service unavailable")
+  rescue Aws::KMS::Errors::ServiceError, Seahorse::Client::NetworkingError => e
+    kms_unavailable!(e)
   end
 
   def decrypt(sealed, context)
@@ -39,8 +38,17 @@ module Encryption
 
     data_key = kms.decrypt_data_key(sealed.encrypted_data_key, key_ref: sealed.kms_key_ref, context: context)
     Aead.open(data_key, sealed.ciphertext, context.to_json).force_encoding(Encoding::UTF_8)
+  rescue Seahorse::Client::NetworkingError => e
+    kms_unavailable!(e)
   rescue Aead::Failure, Aws::KMS::Errors::ServiceError => e
-    Rails.logger.warn("[vault] decrypt failed: #{e.class}")
+    # Tampering, a wrong key or a moved ciphertext: always worth an alert.
+    Rails.error.report(e, handled: true, context: { kms_key_ref: sealed.kms_key_ref })
     raise VaultError.new(:decryption_failed)
+  end
+
+  # Timeouts and connection failures are retryable, unlike a decryption failure.
+  def kms_unavailable!(error)
+    Rails.error.report(error, handled: true)
+    raise VaultError.new(:provider_unavailable, "key management service unavailable")
   end
 end

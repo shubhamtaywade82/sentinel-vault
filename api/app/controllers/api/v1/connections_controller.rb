@@ -37,7 +37,9 @@ module Api
 
       def create_bindings!(connection, workspace)
         bindings = params.require(:bindings)
-        raise VaultError.new(:validation_failed, "at least one binding is required") unless bindings.is_a?(Array) && bindings.any?
+        unless bindings.is_a?(Array) && bindings.any? && bindings.all?(ActionController::Parameters)
+          raise VaultError.new(:validation_failed, "bindings must be a non-empty list of { purpose, secretId } objects")
+        end
 
         bindings.each do |binding|
           secret = workspace.vault_secrets.find_by(id: binding[:secretId])
