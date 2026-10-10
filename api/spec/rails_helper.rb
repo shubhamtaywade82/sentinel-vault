@@ -28,4 +28,6 @@ RSpec.configure do |config|
   config.include ActiveSupport::Testing::TimeHelpers
   config.include ApiHelpers, type: :request
   config.before { Rails.cache.clear }
+  # Requests and jobs reset Current via the Rails executor; plain specs do not.
+  config.after { Current.reset }
 end
