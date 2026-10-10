@@ -10,7 +10,9 @@ class SecretAccessGrant < ApplicationRecord
 
   # Accepts the contract's comma-separated form; stores canonical order so diffs stay clean.
   def permissions=(value)
-    requested = value.is_a?(String) ? value.split(",") : Array(value)
+    # to_s turns non-string input (a JSON object, a number) into an unknown
+    # permission, so it fails validation instead of crashing the request.
+    requested = Array(value).flat_map { |entry| entry.to_s.split(",") }
     super(requested.map(&:strip).reject(&:empty?).uniq.sort_by { |p| PERMISSIONS.index(p) || PERMISSIONS.size })
   end
 

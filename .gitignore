@@ -65,3 +65,4 @@ polish-*.png
 
 # Prisma 7 generated client
 /src/generated/
+.railsforge

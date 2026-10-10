@@ -14,4 +14,18 @@ class VaultSecret < ApplicationRecord
   validates :name, :environment, presence: true
   validates :kind, inclusion: { in: KINDS }
   validates :classification, inclusion: { in: CLASSIFICATIONS }
+
+  # Terminal: retires the active version so no value can be read or written again.
+  def revoke!
+    with_lock do
+      raise VaultError.new(:conflict, "secret is already revoked") if revoked?
+
+      now = Time.current
+      # update_all skips callbacks (SecretVersion has none) and validations; the
+      # status check constraint still guards the value, and the audit row is below.
+      versions.active.update_all(status: "retired", retired_at: now)
+      update!(status: "revoked", revoked_at: now)
+      SecretAccessEvent.record!("secret.revoke", secret: self)
+    end
+  end
 end

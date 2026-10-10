@@ -2,14 +2,14 @@ class ApplicationController < ActionController::API
   include ActionController::HttpAuthentication::Token::ControllerMethods
   include Authentication
 
-  # Later rescue_from declarations win, so the catch-all goes first.
-  rescue_from StandardError, with: :render_internal_error
   rescue_from VaultError, with: :render_vault_error
   rescue_from ActionController::ParameterMissing do |error|
     render_vault_error(VaultError.new(:validation_failed, error.message))
   end
   rescue_from ActiveRecord::RecordInvalid do |error|
-    render_vault_error(VaultError.new(:validation_failed, error.record.errors.full_messages.to_sentence))
+    # A uniqueness clash is the same condition as RecordNotUnique, so both answer 409.
+    code = error.record.errors.details.values.flatten.any? { |detail| detail[:error] == :taken } ? :conflict : :validation_failed
+    render_vault_error(VaultError.new(code, error.record.errors.full_messages.to_sentence))
   end
   rescue_from ActiveRecord::RecordNotUnique do
     render_vault_error(VaultError.new(:conflict, "resource already exists"))
@@ -33,12 +33,5 @@ class ApplicationController < ActionController::API
 
   def render_vault_error(error)
     render json: error.to_envelope, status: error.status
-  end
-
-  def render_internal_error(error)
-    Rails.logger.error("[vault] unhandled #{error.class}: #{error.message}")
-    raise error if Rails.env.local? && !Rails.env.test?
-
-    render_vault_error(VaultError.new(:internal_error, "Internal error"))
   end
 end

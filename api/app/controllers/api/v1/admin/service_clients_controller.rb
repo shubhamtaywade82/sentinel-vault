@@ -17,38 +17,26 @@ module Api
           workspace = Workspace.find_by(id: params.require(:workspaceId)) || raise(VaultError.new(:workspace_not_found))
           client = workspace.service_clients.new(name: params.require(:name), client_type: params.require(:clientType), expires_at: requested_expiry)
           credential = ServiceClient.transaction do
-            client.issue_credential!.tap { audit!("client.create", client) }
+            client.issue_credential!.tap { client.audit!("client.create") }
           end
           render_plaintext({ client: ServiceClientSerializer.call(client), credential: credential }, status: :created)
         end
 
         def rotate_credential
           client = find_client!
-          credential = client.with_lock do
-            raise VaultError.new(:conflict, "a revoked client cannot be re-credentialed") if client.revoked?
-
-            client.issue_credential!.tap { audit!("client.rotate", client) }
-          end
+          credential = client.rotate_credential!
           render_plaintext({ client: ServiceClientSerializer.call(client), credential: credential })
         end
 
         def revoke
           client = find_client!
-          client.with_lock do
-            raise VaultError.new(:conflict, "client is already revoked") if client.revoked?
-
-            client.update!(status: "revoked", revoked_at: Time.current)
-            audit!("client.revoke", client)
-          end
+          client.revoke!
           render json: { client: ServiceClientSerializer.call(client) }
         end
 
         private
 
         def find_client! = ServiceClient.find_by(id: params[:id]) || raise(VaultError.new(:client_not_found))
-
-        # The actor is the admin; the affected client is named in reason_code.
-        def audit!(action, client) = SecretAccessEvent.record!(action, workspace_id: client.workspace_id, reason_code: client.public_id)
 
         def requested_expiry
           days = params[:expiresInDays]

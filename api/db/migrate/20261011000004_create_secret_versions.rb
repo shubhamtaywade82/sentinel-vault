@@ -18,6 +18,9 @@ class CreateSecretVersions < ActiveRecord::Migration[8.1]
     add_index :secret_versions, :vault_secret_id, unique: true, where: "status = 'active'", name: "index_secret_versions_one_active"
     add_check_constraint :secret_versions, "status IN ('active','retired','destroyed')", name: "secret_versions_status_check"
     add_check_constraint :secret_versions, "version_number > 0", name: "secret_versions_number_check"
-    add_foreign_key :vault_secrets, :secret_versions, column: :current_version_id
+    # Composite key: the current version must exist AND belong to this same secret.
+    add_index :secret_versions, %i[id vault_secret_id], unique: true
+    add_foreign_key :vault_secrets, :secret_versions, column: %i[current_version_id id], primary_key: %i[id vault_secret_id],
+                                                      name: "fk_vault_secrets_current_version_same_secret"
   end
 end

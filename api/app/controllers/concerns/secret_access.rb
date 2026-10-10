@@ -48,4 +48,14 @@ module SecretAccess
   def ensure_secret_active!(secret)
     raise VaultError.new(:conflict, "secret is #{secret.status}") unless secret.active?
   end
+
+  # FOR SHARE lets concurrent reads proceed but makes a revoke wait, so the
+  # active check cannot go stale between checking and releasing plaintext.
+  def with_active_secret(secret)
+    VaultSecret.transaction do
+      secret.lock!("FOR SHARE")
+      ensure_secret_active!(secret)
+      yield
+    end
+  end
 end

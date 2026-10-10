@@ -19,9 +19,10 @@ class IntegrationConnection < ApplicationRecord
 
   def access_expired? = access_expires_at.present? && access_expires_at <= Time.current
 
-  def visible_to?(client)
-    client.workspace_id == workspace_id &&
-      SecretAccessGrant.where(service_client: client, vault_secret_id: bindings.select(:vault_secret_id))
-        .where("permissions && ARRAY['value:read','connection:refresh']::varchar[]").exists?
-  end
+  # Connections in the client's workspace bound to a secret it can read or refresh.
+  scope :visible_to, lambda { |client|
+    usable_secrets = client.grants.where("permissions && ARRAY['value:read','connection:refresh']::varchar[]").select(:vault_secret_id)
+    where(workspace_id: client.workspace_id)
+      .where(id: ConnectionSecretBinding.where(vault_secret_id: usable_secrets).select(:integration_connection_id))
+  }
 end

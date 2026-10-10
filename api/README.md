@@ -42,7 +42,8 @@ app refuses to boot without them (`app/lib/vault_config.rb`).
   audit write fails, the request fails with `audit_persist_failed`. The table is
   append-only, enforced by a database trigger.
 - **Integrity in PostgreSQL**: foreign keys, check constraints on every enum and on
-  grant permissions, and a partial unique index allowing one active version per secret.
+  grant permissions, a partial unique index allowing one active version per secret, and a
+  composite foreign key keeping each secret's current version within that secret.
 
 ## API contract inventory
 
@@ -85,8 +86,33 @@ Status per endpoint:
 | `secrets/:id/events` for clients | Any grant | Requires `audit:read` |
 | Source IP | Raw `X-Forwarded-For` | `request.remote_ip` (trusted proxies only) |
 | Missing/invalid token on admin routes | `403 admin_required` | `401 unauthorized` (client tokens still get 403) |
-| Duplicate secret path | `409 conflict` | `422 validation_failed` |
 | Plaintext value size | Unbounded | 64 KB; diff limited to 1,000 lines |
+
+### Key rotation
+
+Each version stores the `kms_key_ref` that wrapped its data key.
+
+- **`aws_kms`**: rotate inside KMS. Automatic key rotation keeps the same key id and
+  stays transparent. To move to a new key, set `VAULT_KMS_KEY_ID` to it: new writes
+  use it, and old versions still decrypt because the old key id is in their
+  `kms_key_ref`. Keep the old key enabled until nothing references it.
+- **`local`**: holds exactly one master key. Changing `VAULT_MASTER_KEY` makes every
+  existing version undecryptable (`decryption_failed`, reported per request). There is
+  no re-wrap tool. This is acceptable only because `local` is refused in production.
+- **Not built yet**: a resumable re-wrap job that moves data keys onto a new key, so
+  an old key can be retired. Needed before retiring any AWS key.
+
+### Cutover blockers (phase 6)
+
+Switching the UI to this API without these changes breaks visible features:
+
+| UI feature | Why it breaks | Decision needed |
+|---|---|---|
+| Rotate (`DashboardView.tsx:153`, `SecretsView.tsx:235`) | Sends no `value`; Rails requires one | Prompt for a value in the UI, or generate values for kinds where random is valid |
+| First-load bootstrap (`page.tsx:135`) | Calls `POST internal/seed`, removed | Drop the call; seed with `bin/rails db:seed` |
+| View as Client (`IdentitySwitcherDialog.tsx:53`) | Calls `GET internal/demo-credentials`, removed | Paste a credential from `db:seed` output instead |
+| Admin audit attribution | One shared admin token, so admin actions have no actor | Per-operator identity (e.g. SSO) before production use |
+| Error handling | Missing tokens on admin routes now return 401, not 403 | Treat 401 like 403 in `Status.tsx` / `AuditView.tsx` |
 
 ### Data migration
 

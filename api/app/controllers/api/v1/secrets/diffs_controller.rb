@@ -9,14 +9,14 @@ module Api
         def create
           secret = find_secret!
           authorize_value_read!(secret, "secret.diff")
-          ensure_secret_active!(secret)
           versions = %i[versionAId versionBId].map { |key| find_version!(secret, params.require(key)) }
 
-          values = versions.map(&:decrypt_value)
-          diff = ::Secrets::LineDiff.call(*values)
-          SecretAccessEvent.record!("secret.diff", secret: secret, secret_version_id: versions.last.id,
-                                    reason_code: versions.map { |version| "v#{version.version_number}" }.join("→"))
-          render_plaintext(diff_payload(versions, values, diff))
+          values = with_active_secret(secret) do
+            SecretAccessEvent.record!("secret.diff", secret: secret, secret_version_id: versions.last.id,
+                                      reason_code: versions.map { |version| "v#{version.version_number}" }.join("→"))
+            versions.map(&:decrypt_value)
+          end
+          render_plaintext(diff_payload(versions, values, ::Secrets::LineDiff.call(*values)))
         end
 
         private

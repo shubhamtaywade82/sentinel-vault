@@ -24,6 +24,15 @@ RSpec.describe "Connections", type: :request do
     expect(SecretAccessEvent.where(action: "connection.credential", actor_client_id: reader.first.id)).to exist
   end
 
+  it "should withhold the credential when its audit row cannot be written" do
+    allow(SecretAccessEvent).to receive(:create!).and_raise(ActiveRecord::ConnectionFailed)
+
+    fetch_credential
+
+    expect(error_code).to eq("audit_persist_failed")
+    expect(response.body).not_to include("acc-1")
+  end
+
   it "should never release a refresh token through a connection" do
     grant!(reader.first, refresh_token, "value:read")
 

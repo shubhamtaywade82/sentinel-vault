@@ -4,8 +4,11 @@ module Encryption
   # every unwrap against the record it belongs to.
   class AwsKms
     REF_PREFIX = "aws-kms:".freeze
+    # KMS sits on the reveal path. SDK defaults (60s read, 3 retries) would hold
+    # a request for minutes during an outage; fail fast and let callers retry.
+    CLIENT_OPTIONS = { http_open_timeout: 2, http_read_timeout: 5, retry_limit: 2 }.freeze
 
-    def initialize(key_id:, client: Aws::KMS::Client.new)
+    def initialize(key_id:, client: Aws::KMS::Client.new(**CLIENT_OPTIONS))
       @key_id = key_id
       @client = client
     end

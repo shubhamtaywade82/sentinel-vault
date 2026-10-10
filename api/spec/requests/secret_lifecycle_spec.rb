@@ -19,6 +19,22 @@ RSpec.describe "Secret lifecycle", type: :request do
     expect { SecretVersion.insert!(duplicate) }.to raise_error(ActiveRecord::RecordNotUnique)
   end
 
+  it "should refuse a current version that belongs to another secret, at the database level" do
+    foreign_version = create(:vault_secret, workspace: secret.workspace).current_version
+
+    expect { secret.update_column(:current_version_id, foreign_version.id) }.to raise_error(ActiveRecord::InvalidForeignKey)
+  end
+
+  it "should roll back the rotation when its audit row cannot be written" do
+    secret
+    allow(SecretAccessEvent).to receive(:create!).and_raise(ActiveRecord::ConnectionFailed)
+
+    post "/api/v1/secrets/#{secret.id}/rotate", params: { value: "v2" }, headers: admin_headers, as: :json
+
+    expect(error_code).to eq("audit_persist_failed")
+    expect(secret.reload.current_version.version_number).to eq(1)
+  end
+
   it "should require an explicit value to rotate instead of inventing one" do
     post "/api/v1/secrets/#{secret.id}/rotate", headers: admin_headers, as: :json
 

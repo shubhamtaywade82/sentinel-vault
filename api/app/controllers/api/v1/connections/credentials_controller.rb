@@ -12,11 +12,12 @@ module Api
         def create
           connection = find_connection!
           secret = readable_secret!(connection)
-          ensure_deliverable!(connection, secret)
-          version = secret.current_version || raise(VaultError.new(:version_not_found))
-
-          value = version.decrypt_value
-          SecretAccessEvent.record!("connection.credential", secret: secret, secret_version_id: version.id, reason_code: connection.id)
+          ensure_deliverable!(connection)
+          version, value = with_active_secret(secret) do
+            version = secret.current_version || raise(VaultError.new(:version_not_found))
+            SecretAccessEvent.record!("connection.credential", secret: secret, secret_version_id: version.id, reason_code: connection.id)
+            [ version, version.decrypt_value ]
+          end
           render_plaintext({ credential: credential_payload(connection, version, value) })
         end
 
@@ -34,12 +35,10 @@ module Api
           binding.vault_secret.tap { |secret| authorize_secret!(secret, "value:read") }
         end
 
-        def ensure_deliverable!(connection, secret)
+        def ensure_deliverable!(connection)
           raise VaultError.new(:reauthorization_required, "connection is #{connection.status}") unless connection.active?
           # Until the refresh engine is migrated an expired token cannot be renewed here.
           raise VaultError.new(:credential_refresh_unavailable, "access credential has expired") if connection.access_expired?
-
-          ensure_secret_active!(secret)
         end
 
         def credential_payload(connection, version, value)

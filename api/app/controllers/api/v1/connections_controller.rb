@@ -4,8 +4,7 @@ module Api
       before_action :require_admin!, only: :create
 
       def index
-        connections = scoped_connections.includes(bindings: :vault_secret).order(created_at: :desc).to_a
-        connections.select! { |connection| connection.visible_to?(Current.principal.client) } unless Current.principal.admin?
+        connections = scoped_connections.includes(bindings: :vault_secret).order(created_at: :desc)
         render json: { connections: connections.map { |connection| ConnectionSerializer.with_bindings(connection) } }
       end
 
@@ -23,7 +22,7 @@ module Api
       private
 
       def scoped_connections
-        return IntegrationConnection.where(workspace_id: Current.principal.client.workspace_id) unless Current.principal.admin?
+        return IntegrationConnection.visible_to(Current.principal.client) unless Current.principal.admin?
 
         params[:workspaceId].present? ? IntegrationConnection.where(workspace_id: params[:workspaceId]) : IntegrationConnection.all
       end
@@ -51,7 +50,7 @@ module Api
       def parse_time(key)
         return if params[key].blank?
 
-        Time.iso8601(params[key])
+        Time.iso8601(params[key].to_s)
       rescue ArgumentError
         raise VaultError.new(:validation_failed, "#{key} is not a valid ISO 8601 time")
       end

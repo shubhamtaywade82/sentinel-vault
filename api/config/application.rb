@@ -46,5 +46,7 @@ module Api
 
     # structure.sql keeps the audit append-only trigger, which schema.rb drops.
     config.active_record.schema_format = :sql
+
+    config.exceptions_app = ->(env) { ErrorEnvelopeApp.call(env) }
   end
 end

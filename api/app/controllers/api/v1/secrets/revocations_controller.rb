@@ -14,21 +14,8 @@ module Api
             raise VaultError.new(:validation_failed, "revokeUpstream is unavailable until provider adapters are migrated")
           end
 
-          revoke!(secret)
+          secret.revoke!
           render json: { secret: SecretSerializer.call(secret) }
-        end
-
-        private
-
-        def revoke!(secret)
-          secret.with_lock do
-            raise VaultError.new(:conflict, "secret is already revoked") if secret.revoked?
-
-            now = Time.current
-            secret.versions.active.update_all(status: "retired", retired_at: now)
-            secret.update!(status: "revoked", revoked_at: now)
-            SecretAccessEvent.record!("secret.revoke", secret: secret)
-          end
         end
       end
     end

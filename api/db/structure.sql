@@ -458,6 +458,13 @@ CREATE INDEX index_secret_leases_on_vault_secret_id ON public.secret_leases USIN
 
 
 --
+-- Name: index_secret_versions_on_id_and_vault_secret_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_secret_versions_on_id_and_vault_secret_id ON public.secret_versions USING btree (id, vault_secret_id);
+
+
+--
 -- Name: index_secret_versions_on_vault_secret_id_and_version_number; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -541,14 +548,6 @@ ALTER TABLE ONLY public.secret_access_grants
 
 ALTER TABLE ONLY public.rotation_runs
     ADD CONSTRAINT fk_rails_4b29a61f2c FOREIGN KEY (result_version_id) REFERENCES public.secret_versions(id);
-
-
---
--- Name: vault_secrets fk_rails_5f53eaadb0; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.vault_secrets
-    ADD CONSTRAINT fk_rails_5f53eaadb0 FOREIGN KEY (current_version_id) REFERENCES public.secret_versions(id);
 
 
 --
@@ -637,6 +636,14 @@ ALTER TABLE ONLY public.service_clients
 
 ALTER TABLE ONLY public.secret_leases
     ADD CONSTRAINT fk_rails_fac377449a FOREIGN KEY (service_client_id) REFERENCES public.service_clients(id);
+
+
+--
+-- Name: vault_secrets fk_vault_secrets_current_version_same_secret; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vault_secrets
+    ADD CONSTRAINT fk_vault_secrets_current_version_same_secret FOREIGN KEY (current_version_id, id) REFERENCES public.secret_versions(id, vault_secret_id);
 
 
 --

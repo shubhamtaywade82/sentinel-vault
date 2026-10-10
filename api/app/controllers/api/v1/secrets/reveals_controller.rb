@@ -11,12 +11,12 @@ module Api
         def create
           secret = find_secret!
           authorize_value_read!(secret, "secret.reveal")
-          ensure_secret_active!(secret)
-          version = secret.current_version || raise(VaultError.new(:version_not_found))
-
-          value = version.decrypt_value
-          # Plaintext leaves only after its audit row is durable.
-          SecretAccessEvent.record!("secret.reveal", secret: secret, secret_version_id: version.id, reason_code: reason)
+          version, value = with_active_secret(secret) do
+            version = secret.current_version || raise(VaultError.new(:version_not_found))
+            # Plaintext leaves only after its audit row commits with this transaction.
+            SecretAccessEvent.record!("secret.reveal", secret: secret, secret_version_id: version.id, reason_code: reason)
+            [ version, version.decrypt_value ]
+          end
           render_plaintext({ secret: SecretSerializer.call(secret), version: SecretVersionSerializer.call(version), value: value })
         end
 

@@ -23,6 +23,8 @@ module Secrets
     def append_version(secret, value, created_by)
       number = (secret.versions.maximum(:version_number) || 0) + 1
       now = Time.current
+      # update_all skips callbacks (SecretVersion has none); the partial unique
+      # index and status check constraint still guard the result.
       secret.versions.active.update_all(status: "retired", retired_at: now)
       sealed = Encryption.encrypt(value, SecretVersion.encryption_context(secret, number))
       secret.versions.create!(version_number: number, status: "active", created_by: created_by, activated_at: now, **sealed.to_h)

@@ -36,6 +36,27 @@ class ServiceClient < ApplicationRecord
     credential
   end
 
+  def rotate_credential!
+    with_lock do
+      raise VaultError.new(:conflict, "a revoked client cannot be re-credentialed") if revoked?
+
+      issue_credential!.tap { audit!("client.rotate") }
+    end
+  end
+
+  # Terminal: a revoked client can never be re-credentialed.
+  def revoke!
+    with_lock do
+      raise VaultError.new(:conflict, "client is already revoked") if revoked?
+
+      update!(status: "revoked", revoked_at: Time.current)
+      audit!("client.revoke")
+    end
+  end
+
+  # The actor is whoever is authenticated; this client is the subject, named in reason_code.
+  def audit!(action) = SecretAccessEvent.record!(action, workspace_id: workspace_id, reason_code: public_id)
+
   def permissions_for(secret)
     grants.find_by(vault_secret_id: secret.id)&.permissions || []
   end
