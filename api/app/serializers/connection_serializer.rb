@@ -9,6 +9,7 @@ module ConnectionSerializer
       authMethod: connection.auth_method,
       adapterKey: connection.adapter_key,
       providerAccountRef: connection.provider_account_ref,
+      tokenUrl: connection.token_url,
       status: connection.status,
       accessExpiresAt: connection.access_expires_at,
       refreshAfter: connection.refresh_after,

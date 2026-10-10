@@ -31,6 +31,7 @@ module Api
         {
           provider_key: params.require(:providerKey), auth_method: params.require(:authMethod),
           adapter_key: params.require(:adapterKey), provider_account_ref: params[:providerAccountRef].presence,
+          token_url: params[:tokenUrl].presence,
           access_expires_at: parse_time(:accessExpiresAt), refresh_after: parse_time(:refreshAfter)
         }
       end

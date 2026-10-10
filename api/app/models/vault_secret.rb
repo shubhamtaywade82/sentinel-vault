@@ -7,6 +7,7 @@ class VaultSecret < ApplicationRecord
   has_many :versions, class_name: "SecretVersion"
   has_many :grants, class_name: "SecretAccessGrant"
   has_many :bindings, class_name: "ConnectionSecretBinding"
+  has_many :leases, class_name: "SecretLease"
 
   enum :status, { active: "active", rotating: "rotating", revoked: "revoked", expired: "expired", retired: "retired" }, validate: true
 

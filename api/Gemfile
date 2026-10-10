@@ -19,6 +19,10 @@ gem "solid_queue"
 
 # Production data-key protection; the local provider is refused in production.
 gem "aws-sdk-kms", "~> 1.0"
+# RFC 6238 codes for Dhan's PIN + TOTP token generation.
+gem "rotp", "~> 6.3"
+# Bundled gem since Ruby 3.4; audit log export.
+gem "csv"
 
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
@@ -41,4 +45,8 @@ group :development, :test do
   gem "rspec-rails", "~> 8.0"
   gem "factory_bot_rails"
   gem "dotenv-rails"
+end
+
+group :test do
+  gem "webmock"
 end

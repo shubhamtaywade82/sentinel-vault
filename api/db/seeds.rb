@@ -1,5 +1,7 @@
 # Demo data for local development. Secret values are random placeholders and
-# client credentials are printed once, never written to disk.
+# client credentials are printed once, never written to disk. Connections are
+# scheduled a day out so a demo "Run Watchdog" never sends these fake
+# credentials to the real Dhan API.
 abort "Refusing to seed demo data in production" if Rails.env.production?
 if Workspace.exists?(slug: "production")
   puts "Already seeded; run bin/rails db:reset to start over"
@@ -8,7 +10,8 @@ end
 
 SECRETS = {
   "dhan/prod/access-token" => [ "access_token", "dhan" ],
-  "dhan/prod/refresh-token" => [ "refresh_token", "dhan" ],
+  "dhan/prod/client-id" => [ "api_key", "dhan" ],
+  "dhan/prod/pin" => [ "client_secret", "dhan" ],
   "dhan/prod/totp-seed" => [ "totp_seed", "dhan" ],
   "broker/prod/api-key" => [ "api_key", "broker" ],
   "db/prod/connection-string" => [ "connection_string", nil ],
@@ -28,16 +31,19 @@ production = Workspace.create!(slug: "production", name: "Production")
 
 secrets = SECRETS.to_h do |path, (kind, provider)|
   secret = production.vault_secrets.create!(path: path, name: path.split("/").last.titleize, kind: kind, provider: provider)
-  Secrets::WriteVersion.call(secret, "secret.create", { value: "demo-#{SecureRandom.hex(16)}", created_by: "seed" })
+  value = kind == "totp_seed" ? ROTP::Base32.random : "demo-#{SecureRandom.hex(16)}"
+  Secrets::WriteVersion.call(secret, "secret.create", { value: value, created_by: "seed" })
   [ path, secret ]
 end
 
 dhan = production.integration_connections.create!(
   provider_key: "dhan", auth_method: "oauth2_refresh", adapter_key: "dhan_v1",
-  access_expires_at: 90.minutes.from_now, refresh_after: 45.minutes.from_now
+  access_expires_at: 24.hours.from_now, refresh_after: 23.hours.from_now
 )
-dhan.bindings.create!(vault_secret: secrets.fetch("dhan/prod/access-token"), purpose: "access_token")
-dhan.bindings.create!(vault_secret: secrets.fetch("dhan/prod/refresh-token"), purpose: "refresh_token")
+{ "access_token" => "dhan/prod/access-token", "client_id" => "dhan/prod/client-id",
+  "pin" => "dhan/prod/pin", "totp_seed" => "dhan/prod/totp-seed" }.each do |purpose, path|
+  dhan.bindings.create!(vault_secret: secrets.fetch(path), purpose: purpose)
+end
 
 puts "Demo client credentials (shown once):"
 GRANTS.each do |name, grants|

@@ -13,12 +13,13 @@ module Api
           connection = find_connection!
           secret = readable_secret!(connection)
           ensure_deliverable!(connection)
+          refreshed = refresh_if_expired!(connection)
           version, value = with_active_secret(secret) do
             version = secret.current_version || raise(VaultError.new(:version_not_found))
             SecretAccessEvent.record!("connection.credential", secret: secret, secret_version_id: version.id, reason_code: connection.id)
             [ version, version.decrypt_value ]
           end
-          render_plaintext({ credential: credential_payload(connection, version, value) })
+          render_plaintext({ credential: credential_payload(connection, version, value).merge(refreshed: refreshed) })
         end
 
         private
@@ -37,12 +38,26 @@ module Api
 
         def ensure_deliverable!(connection)
           raise VaultError.new(:reauthorization_required, "connection is #{connection.status}") unless connection.active?
-          # Until the refresh engine is migrated an expired token cannot be renewed here.
-          raise VaultError.new(:credential_refresh_unavailable, "access credential has expired") if connection.access_expired?
+        end
+
+        # An expired token is renewed first; if that fails the caller gets an
+        # error, never the expired value.
+        def refresh_if_expired!(connection)
+          return false unless connection.access_expired?
+
+          run = ::Connections::Refresh.call(connection) if connection.provider.refreshable?
+          raise VaultError.new(:credential_refresh_unavailable, "access credential has expired and could not be refreshed") unless run&.succeeded?
+
+          connection.reload
+          true
+        rescue VaultError => e
+          raise unless e.code == :rotation_in_progress
+
+          raise VaultError.new(:credential_refresh_unavailable, "access credential is being refreshed; retry shortly")
         end
 
         def credential_payload(connection, version, value)
-          { value: value, expiresAt: connection.access_expires_at, generation: connection.refresh_generation, refreshed: false, versionId: version.id }
+          { value: value, expiresAt: connection.access_expires_at, generation: connection.refresh_generation, versionId: version.id }
         end
       end
     end

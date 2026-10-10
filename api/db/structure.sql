@@ -81,7 +81,9 @@ CREATE TABLE public.integration_connections (
     reauth_required_at timestamp(6) without time zone,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT integration_connections_status_check CHECK (((status)::text = ANY ((ARRAY['active'::character varying, 'refreshing'::character varying, 'reauth_required'::character varying, 'revoked'::character varying, 'error'::character varying])::text[])))
+    token_url character varying,
+    CONSTRAINT integration_connections_status_check CHECK (((status)::text = ANY ((ARRAY['active'::character varying, 'refreshing'::character varying, 'reauth_required'::character varying, 'revoked'::character varying, 'error'::character varying])::text[]))),
+    CONSTRAINT integration_connections_token_url_https CHECK (((token_url IS NULL) OR ((token_url)::text ~~ 'https://%'::text)))
 );
 
 
@@ -708,6 +710,7 @@ ALTER TABLE ONLY public.vault_secrets
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261011000010'),
 ('20261011000009'),
 ('20261011000008'),
 ('20261011000007'),

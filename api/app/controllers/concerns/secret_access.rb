@@ -7,8 +7,19 @@ module SecretAccess
   # Clients only ever see their own workspace, so a foreign id is "not found",
   # never "forbidden" — existence is not confirmed across tenants.
   def find_secret!(id = params[:secret_id] || params[:id])
-    scope = Current.principal.admin? ? VaultSecret.all : Current.principal.client.workspace.vault_secrets
-    scope.find_by(id: id) || raise(VaultError.new(:secret_not_found))
+    return VaultSecret.find_by(id: id) || raise(VaultError.new(:secret_not_found)) if Current.principal.admin?
+
+    Current.principal.client.workspace.vault_secrets.find_by(id: id) || begin
+      record_cross_workspace_probe(id)
+      raise VaultError.new(:secret_not_found)
+    end
+  end
+
+  # The client is told "not found", but the owning tenant's audit trail (and the
+  # anomaly detector) sees the probe.
+  def record_cross_workspace_probe(id)
+    foreign = VaultSecret.find_by(id: id)
+    SecretAccessEvent.record_denial("secret.lookup", secret: foreign, reason_code: "cross_workspace") if foreign
   end
 
   # Admin passes. A client needs `permission`, or any grant when it is nil.
