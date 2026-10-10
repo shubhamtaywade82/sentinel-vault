@@ -1,0 +1,599 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* ----------------------------------------------------------------------------
+ * Sentinel Vault — frontend visual polish utilities
+ * Palette: emerald (primary/safe) · zinc (neutral) · amber (warning) · rose (error)
+ * All classes are additive and opt-in; existing class names are unchanged.
+ * ------------------------------------------------------------------------- */
+
+/* Elevated card surface used by StatCard, dashboard panels, dialogs.
+   R3 polish: glassmorphism — subtle gradient bg separates from #0a0b0f page,
+   inset glass-edge highlight, layered elevation shadow, 12px radius.
+   R4 polish: tabular-nums on all card numbers; opt-in backdrop-filter blur
+   (gated by @supports so unsupported browsers fall back gracefully, and
+   disabled under prefers-reduced-motion for perf).
+   R7 polish: added `inset 0 1px 0 0 rgb(255 255 255 / 0.04)` as the topmost
+   layer — a 1px top-edge highlight that reads as light falling from above
+   (simulated overhead light source). Sits above the existing inset glass-edge
+   so the top edge is fractionally brighter than the rest of the frame. */
+.vault-card {
+  background: linear-gradient(
+    180deg,
+    rgb(39 39 42 / 0.5) 0%,
+    rgb(24 24 27 / 0.6) 100%
+  ); /* zinc-800/50 → zinc-900/60 */
+  border: 0; /* hard border replaced by inset glass-edge in box-shadow */
+  border-radius: 0.75rem; /* 12px */
+  font-variant-numeric: tabular-nums; /* R4: reinforces KPI numeric alignment */
+  box-shadow:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.04), /* R7: top-edge highlight */
+    inset 0 0 0 1px rgb(255 255 255 / 0.06), /* glass-edge highlight */
+    0 1px 2px 0 rgb(0 0 0 / 0.3),
+    0 4px 12px -2px rgb(0 0 0 / 0.25);
+}
+@supports (
+  (backdrop-filter: blur(8px)) or (-webkit-backdrop-filter: blur(8px))
+) {
+  .vault-card {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Disable backdrop-filter under reduced motion — it's a heavy effect and
+     reduced-motion users want minimal visual noise. */
+  .vault-card {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+/* R4 polish: ambient glow on the accent bar of KPI cards. Set `--accent-glow`
+   via inline `style={{ '--accent-glow': 'rgba(...)' }}` on the card (or any
+   ancestor) and add `.vault-ambient-glow` to the bar element. The glow emits
+   from the left edge in the bar's accent color, reading as soft ambient light
+   rather than a colored blob. Subtle ~15% alpha. */
+.vault-ambient-glow {
+  box-shadow: -4px 0 15px var(--accent-glow, transparent);
+}
+
+/* Subtle hover lift for cards that should feel interactive.
+   R6 polish: added a 2% white tint on hover (inset 9999px spread) so the
+   background lightens slightly when the card lifts, per the VLM feedback
+   asking for "hover should also lighten the background by ~2%". Layered
+   below the glass-edge highlight (first-declared shadow renders on top). */
+.vault-card-interactive {
+  transition: transform 200ms ease, box-shadow 200ms ease,
+    border-color 200ms ease;
+}
+.vault-card-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 0 0 9999px rgb(255 255 255 / 0.02), /* R6: 2% bg lightening */
+    inset 0 0 0 1px rgb(255 255 255 / 0.08), /* brighter glass-edge on hover */
+    0 2px 4px 0 rgb(0 0 0 / 0.35),
+    0 8px 24px -4px rgb(0 0 0 / 0.3);
+}
+
+/* Table polish — zebra striping, row hover, sticky header, breathability.
+   Apply via `vault-table` class on the <Table> (shadcn Table) or <table>. */
+.vault-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.vault-table tbody tr:nth-child(even) {
+  background: rgb(255 255 255 / 0.015);
+}
+.vault-table tbody tr:hover {
+  background: rgb(255 255 255 / 0.04);
+}
+.vault-table thead tr {
+  position: sticky;
+  top: 0;
+  background: rgb(9 9 11 / 0.95); /* zinc-950/95 */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 5;
+}
+.vault-table thead th {
+  border-bottom: 1px solid rgb(63 63 70 / 0.8); /* zinc-700/80 */
+}
+.vault-table td {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  font-variant-numeric: tabular-nums; /* R4: align numeric columns */
+}
+.vault-table th {
+  font-variant-numeric: tabular-nums; /* R4: align numeric columns */
+}
+
+/* Access-grants matrix — highlight the hovered cell's row + column. */
+.vault-matrix tbody tr:hover {
+  background: rgb(255 255 255 / 0.03);
+}
+.vault-matrix th:hover {
+  background: rgb(255 255 255 / 0.03);
+}
+.vault-matrix tbody td:hover {
+  background: rgb(255 255 255 / 0.02);
+}
+
+/* Pulse animation for attention-seeking badges (reauth_required, refreshing,
+   running, pending). Slow and subtle so it doesn't distract. */
+@keyframes vault-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+.vault-pulse {
+  animation: vault-pulse 1.8s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .vault-pulse {
+    animation: none;
+  }
+}
+
+/* Soft "breathing radar" pulse for health/alive indicators (header dot,
+   footer nominal dot). Box-shadow expands outward and fades — radar style. */
+@keyframes vault-health-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgb(16 185 129 / 0.4);
+  }
+  50% {
+    opacity: 0.7;
+    box-shadow: 0 0 0 4px rgb(16 185 129 / 0);
+  }
+}
+.vault-health-pulse {
+  animation: vault-health-pulse 2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .vault-health-pulse {
+    animation: none;
+  }
+}
+
+/* Global scrollbar styling — thin, dark, floating thumb (R3 polish).
+   Thumb uses transparent border + background-clip:padding-box so it floats
+   inside the track rather than filling it edge-to-edge. */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(82 82 91 / 0.4); /* zinc-600/40 */
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(113 113 122 / 0.6); /* zinc-500/60 */
+  background-clip: padding-box;
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(82 82 91 / 0.4) transparent;
+}
+
+/* Dialog/Sheet backdrop polish — darker + blurred. shadcn overlays default to
+   bg-black/50; we bump to bg-black/85 backdrop-blur-sm for the vault. */
+[data-slot="dialog-overlay"],
+[data-slot="sheet-overlay"] {
+  background: rgb(0 0 0 / 0.85) !important;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* R3 polish: floating-elevated feel for dialog/sheet content — deeper drop
+   shadow + thin inset glass-edge highlight, matching .vault-card geometry. */
+[data-slot="dialog-content"],
+[data-slot="sheet-content"] {
+  border-radius: 0.75rem !important;
+  box-shadow:
+    0 24px 48px -12px rgb(0 0 0 / 0.5),
+    0 0 0 1px rgb(255 255 255 / 0.04) !important;
+}
+
+/* R3 polish: tactile button press — every shadcn Button gets a subtle
+   scale-down on :active so clicks feel responsive. */
+[data-slot="button"]:active {
+  transform: scale(0.98);
+}
+
+/* R3 polish: footer top fade — a soft transparent → page-bg gradient layered
+   above the footer's bg so it blends into the page rather than a hard line. */
+.vault-footer-fade::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent 0%, #0a0b0f 30%);
+}
+
+/* R3 polish: sidebar active item — emerald-tinted background fading L→R
+   from the active border toward transparent. Pairs with the emerald icon +
+   inset glow border.
+   R4 polish: transition the emerald gradient + base bg smoothly on hover
+   enter/exit (200ms) so the active state fades in rather than snapping.
+   R7 polish: backdrop-filter blur(8px) on the active state only, so the
+   active row picks up the page bg subtly (glass effect) and reads as
+   "pressed into" the surface rather than sitting on top. Inactive items
+   (.vault-nav-item without .vault-nav-active) do NOT get the blur — only
+   the active row is glass. Disabled under prefers-reduced-motion (perf). */
+.vault-nav-active {
+  background:
+    linear-gradient(
+      90deg,
+      rgb(16 185 129 / 0.08) 0%,
+      transparent 100%
+    ),
+    rgb(39 39 42 / 0.5); /* zinc-800/50 — keeps the row readable */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: background-color 200ms ease, color 200ms ease, transform 150ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .vault-nav-active {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+.vault-nav-item {
+  /* R4: explicit property list (was `all 150ms`) for smoother fade-in of
+     background + color, with a faster transform for the hover nudge. */
+  transition: background-color 200ms ease, color 200ms ease, transform 150ms ease;
+}
+.vault-nav-item:hover:not(.vault-nav-active) {
+  transform: translateX(1px);
+}
+
+/* R5 polish: shimmer animation for skeleton placeholders. Replaces the
+   flat gray bar with a slow horizontal gradient sweep so loading state
+   reads as "actively loading" rather than "empty". CSS-only.
+   Opt-out under prefers-reduced-motion. */
+@keyframes vault-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+.vault-skeleton {
+  background: linear-gradient(
+    90deg,
+    rgb(39 39 42 / 0.4) 25%,
+    rgb(63 63 70 / 0.6) 50%,
+    rgb(39 39 42 / 0.4) 75%
+  );
+  background-size: 200% 100%;
+  animation: vault-shimmer 1.5s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .vault-skeleton {
+    animation: none;
+  }
+}
+
+/* R5 polish: globally upgrade shadcn Skeleton instances inside vault cards
+   to use the shimmer effect. This is additive — any existing <Skeleton>
+   inside a .vault-card automatically inherits the shimmer background and
+   animation, replacing the flat bg-accent + tailwind animate-pulse. The
+   higher specificity (0,2,0) overrides the Tailwind .animate-pulse (0,1,0)
+   and the inline bg-* utility (0,1,0). */
+.vault-card [data-slot="skeleton"] {
+  background: linear-gradient(
+    90deg,
+    rgb(39 39 42 / 0.4) 25%,
+    rgb(63 63 70 / 0.6) 50%,
+    rgb(39 39 42 / 0.4) 75%
+  );
+  background-size: 200% 100%;
+  animation: vault-shimmer 1.5s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .vault-card [data-slot="skeleton"] {
+    animation: none;
+  }
+}
+
+/* R5 polish: Reauth Required attention glow — applied to .vault-card when
+   the StatCard sets data-attention="true" (accent=rose + value > 0). Adds
+   a soft rose inset border (15% alpha) + ambient outer glow (8% alpha)
+   layered with the existing .vault-card box-shadow so the card "breathes"
+   attention without being aggressive. The 1px inset rose border replaces
+   the default glass-edge border (same slot, just tinted).
+   R7 polish: pulsing attention glow — a 3s ease-in-out infinite animation
+   oscillates the rose inset border alpha (0.15 → 0.20) and the outer rose
+   ambient glow (20px/0.08 → 28px/0.12). The full shadow stack is preserved
+   across both keyframes (glass-edge + elevation) so the card keeps its
+   depth + glass-edge during the pulse. The static box-shadow rule below
+   serves as the fallback when prefers-reduced-motion disables the
+   animation. The `:hover` rule disables the animation (animation: none)
+   so the brighter hover box-shadow takes over cleanly. */
+@keyframes vault-attention-pulse {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 0 0 1px rgb(244 63 94 / 0.15),
+      inset 0 0 0 1px rgb(255 255 255 / 0.06),
+      0 0 20px rgb(244 63 94 / 0.08),
+      0 1px 2px 0 rgb(0 0 0 / 0.3),
+      0 4px 12px -2px rgb(0 0 0 / 0.25);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 0 1px rgb(244 63 94 / 0.2),
+      inset 0 0 0 1px rgb(255 255 255 / 0.06),
+      0 0 28px rgb(244 63 94 / 0.12),
+      0 1px 2px 0 rgb(0 0 0 / 0.3),
+      0 4px 12px -2px rgb(0 0 0 / 0.25);
+  }
+}
+.vault-card[data-attention="true"] {
+  box-shadow:
+    inset 0 0 0 1px rgb(244 63 94 / 0.15), /* rose attention border */
+    inset 0 0 0 1px rgb(255 255 255 / 0.06), /* keep glass-edge highlight */
+    0 0 20px rgb(244 63 94 / 0.08), /* soft rose ambient glow */
+    0 1px 2px 0 rgb(0 0 0 / 0.3), /* preserve original elevation */
+    0 4px 12px -2px rgb(0 0 0 / 0.25); /* preserve original elevation */
+  animation: vault-attention-pulse 3s ease-in-out infinite;
+}
+.vault-card[data-attention="true"]:hover {
+  /* Stop the pulse on hover so the brighter hover shadow takes over
+     cleanly (animations override regular property declarations regardless
+     of specificity, so `animation: none` is required for the hover
+     box-shadow to apply). The user is interacting — the pulse pauses. */
+  animation: none;
+  box-shadow:
+    inset 0 0 0 1px rgb(244 63 94 / 0.22),
+    inset 0 0 0 1px rgb(255 255 255 / 0.08),
+    0 0 24px rgb(244 63 94 / 0.12),
+    0 2px 4px 0 rgb(0 0 0 / 0.35),
+    0 8px 24px -4px rgb(0 0 0 / 0.3);
+}
+@media (prefers-reduced-motion: reduce) {
+  .vault-card[data-attention="true"] {
+    animation: none;
+  }
+}
+
+/* R6 polish: gradient alert border for reauth cards (rose → amber).
+   Per the VLM brief, this should be a rose-to-amber gradient border on the
+   reauth StatCard when accent=rose AND value>0, in addition to the existing
+   data-attention glow. The brief specified `border-image: linear-gradient(180deg,
+   #f43f5e, #f59e0b) 1`; we implement the same gradient via the mask-composite
+   technique so the border respects the card's rounded corners (border-image
+   alone would render square corners because the card has overflow-hidden and
+   border-image ignores border-radius). The 1px padding creates the donut/ring
+   shape — only the 1px ring is visible, the center is masked out so the card's
+   background gradient and the accent bar show through.
+   The ::before is positioned absolute with no z-index, so it renders BELOW
+   the StatCard's accent bar (which is a positioned descendant with auto
+   z-index and later in tree order) — the accent bar's left edge stays
+   visible on top of the ring, blending into the rose end of the gradient. */
+.vault-alert-border {
+  position: relative;
+}
+/* R11 Bug 2: softened the gradient border from a solid rose→amber
+   (linear-gradient(180deg, #f43f5e, #f59e0b)) to a semi-transparent
+   rose→amber (linear-gradient(180deg, rgba(244,63,94,0.6),
+   rgba(245,158,11,0.4))). The VLM noted the original was "jarring" and
+   clashed with the dark panel + zinc/emerald palette. The pulsing
+   attention glow (vault-attention-pulse) + the rose ambient glow on the
+   left accent bar still demand attention; the ring is now a subtle
+   outline that reads as "alert" without screaming. The 1px ring stays
+   because the mask technique gives a crisp edge — only the alpha drops. */
+.vault-alert-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(180deg, rgba(244,63,94,0.6), rgba(245,158,11,0.4));
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Consistent emerald focus rings on interactive elements. */
+:focus-visible {
+  outline: 2px solid rgb(16 185 129 / 0.5); /* emerald-500/50 */
+  outline-offset: 2px;
+}
+/* Don't override shadcn's own focus ring utilities on form fields. */
+[data-slot="input"]:focus-visible,
+[data-slot="textarea"]:focus-visible,
+[role="checkbox"]:focus-visible,
+[role="radio"]:focus-visible {
+  outline: none;
+}
+
+/* View entrance animation — lightweight CSS replacement for framer-motion */
+@keyframes vault-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.vault-enter {
+  animation: vault-enter 0.18s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .vault-enter { animation: none; }
+}
+
+/* R7 polish: inline action button — small tactile pill for inline per-row
+   actions (e.g. upcoming blast-radius / renew-lease features in the secret
+   detail + connection lists). Reads as a quiet, secondary control: zinc
+   neutral at rest, emerald-tinted on hover (matching the vault primary).
+   Compact sizing (px-2 py-0.5, text-[10px]) so it fits inside table rows
+   and list items without breaking the row height. */
+.vault-action-btn {
+  @apply inline-flex items-center gap-1 rounded-md border border-zinc-700 bg-zinc-800/60 px-2 py-0.5 text-[10px] font-medium text-zinc-300 transition-colors duration-150 hover:border-emerald-600/40 hover:bg-emerald-950/30 hover:text-emerald-300;
+}
+
+/* R8 polish: empty-state container — gives EmptyState panels (and the inline
+   empty lists in the new Usage tab) a visually distinct "intentional empty"
+   container so they read as "there is no data here by design" rather than
+   "the data is loading and the row is empty". Dashed border + faint inner
+   surface + centered text. Additive: only applied where opted-in.
+   R9 Bug 3: added `display: flex; flex-direction: column; align-items:
+   center; justify-content: center; min-height: 120px;` so the EmptyState
+   icon + title + hint are vertically centered within the container rather
+   than sitting at the top. The min-height ensures short hints don't
+   collapse the container to a cramped strip; the flex centering makes
+   the dashed border read as a framed "intentional empty" panel. */
+/* R10 Polish 1 + Polish 3: reduced min-height from 120px → 96px so empty
+   panels don't have excessive whitespace for a single line of text. The
+   icon + text now feel tightly centered rather than floating in a huge
+   box. The padding (1.5rem 1rem) and flex centering are unchanged from
+   R7/R8 — the container still reads as a framed "intentional empty"
+   panel with the dashed border. */
+.vault-empty-state {
+  border: 1px dashed rgb(63 63 70 / 0.6); /* zinc-700/60 */
+  background: rgb(9 9 11 / 0.2); /* zinc-950/20 */
+  border-radius: 0.375rem; /* 6px — matches the rounded-md cards */
+  padding: 1.5rem 1rem; /* px-4 py-6 */
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 96px;
+}

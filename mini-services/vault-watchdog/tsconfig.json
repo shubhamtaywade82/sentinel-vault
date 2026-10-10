@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "Bun",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "types": ["bun-types"],
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "allowJs": false,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "lib": ["ESNext"]
+  },
+  "include": ["index.ts"]
+}

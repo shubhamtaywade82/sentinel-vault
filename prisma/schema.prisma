@@ -1,0 +1,211 @@
+// Sentinel Vault — Prisma schema (sqlite).
+// Source of truth: VAULT_CONTRACT.md §3. Do not deviate from field names / types.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Workspace {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  serviceClients         ServiceClient[]
+  vaultSecrets           VaultSecret[]
+  integrationConnections IntegrationConnection[]
+  secretAccessEvents     SecretAccessEvent[]
+}
+
+model ServiceClient {
+  id               String    @id @default(cuid())
+  workspaceId      String
+  publicId         String    @unique
+  name             String
+  clientType       String
+  credentialDigest String    @unique
+  credentialPrefix String
+  status           String    @default("active")
+  expiresAt        DateTime?
+  lastUsedAt       DateTime?
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  workspace    Workspace           @relation(fields: [workspaceId], references: [id])
+  grants       SecretAccessGrant[]
+  accessEvents SecretAccessEvent[]
+}
+
+model VaultSecret {
+  id               String    @id @default(cuid())
+  workspaceId      String
+  path             String
+  name             String
+  kind             String
+  classification   String    @default("confidential")
+  environment      String    @default("production")
+  provider         String?
+  status           String    @default("active")
+  expiresAt        DateTime?
+  currentVersionId String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@unique([workspaceId, path])
+
+  workspace    Workspace            @relation(fields: [workspaceId], references: [id])
+  versions     SecretVersion[]
+  grants       SecretAccessGrant[]
+  accessEvents SecretAccessEvent[]
+  rotationRuns RotationRun[]
+  bindings     ConnectionSecretBinding[]
+}
+
+model SecretVersion {
+  id               String    @id @default(cuid())
+  vaultSecretId    String
+  versionNumber    Int
+  ciphertext       String
+  encryptedDataKey String
+  kmsKeyRef        String
+  cryptoScheme     String    @default("aes-256-gcm-envelope-v1")
+  status           String    @default("active")
+  createdBy        String    @default("system")
+  activatedAt      DateTime  @default(now())
+  retiredAt        DateTime?
+  createdAt        DateTime  @default(now())
+
+  @@unique([vaultSecretId, versionNumber])
+
+  vaultSecret   VaultSecret         @relation(fields: [vaultSecretId], references: [id])
+  accessEvents SecretAccessEvent[]
+  rotationRuns  RotationRun[]
+}
+
+model IntegrationConnection {
+  id                    String    @id @default(cuid())
+  workspaceId           String
+  providerKey            String
+  authMethod             String
+  adapterKey             String
+  providerAccountRef     String?
+  status                 String    @default("active")
+  accessExpiresAt        DateTime?
+  refreshAfter           DateTime?
+  lastRefreshedAt        DateTime?
+  refreshLeaseExpiresAt  DateTime?
+  refreshGeneration      Int       @default(0)
+  lastErrorCode          String?
+  reauthRequiredAt       DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  workspace    Workspace                 @relation(fields: [workspaceId], references: [id])
+  bindings     ConnectionSecretBinding[]
+  rotationRuns RotationRun[]
+}
+
+model ConnectionSecretBinding {
+  id            String   @id @default(cuid())
+  connectionId  String
+  vaultSecretId String
+  purpose       String
+  createdAt     DateTime @default(now())
+
+  @@unique([connectionId, purpose])
+
+  connection  IntegrationConnection @relation(fields: [connectionId], references: [id])
+  vaultSecret VaultSecret            @relation(fields: [vaultSecretId], references: [id])
+}
+
+model SecretAccessGrant {
+  id              String   @id @default(cuid())
+  serviceClientId String
+  vaultSecretId   String
+  permissions     String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([serviceClientId, vaultSecretId])
+
+  serviceClient ServiceClient @relation(fields: [serviceClientId], references: [id])
+  vaultSecret   VaultSecret    @relation(fields: [vaultSecretId], references: [id])
+}
+
+model RotationRun {
+  id              String    @id @default(cuid())
+  connectionId    String?
+  vaultSecretId   String?
+  operation       String
+  status          String    @default("pending")
+  attemptCount    Int       @default(0)
+  idempotencyKey  String    @unique
+  runAfter        DateTime  @default(now())
+  startedAt       DateTime?
+  completedAt     DateTime?
+  resultVersionId String?
+  errorCode       String?
+  leaseToken      String?
+  leaseExpiresAt  DateTime?
+  correlationId   String?
+  createdAt       DateTime  @default(now())
+
+  connection    IntegrationConnection? @relation(fields: [connectionId], references: [id])
+  vaultSecret   VaultSecret?           @relation(fields: [vaultSecretId], references: [id])
+  resultVersion SecretVersion?         @relation(fields: [resultVersionId], references: [id])
+}
+
+model SecretAccessEvent {
+  id              String    @id @default(cuid())
+  workspaceId     String?
+  actorClientId   String?
+  vaultSecretId   String?
+  secretVersionId String?
+  action          String
+  outcome         String    @default("success")
+  reasonCode      String?
+  requestId       String?
+  sourceIp        String?
+  createdAt       DateTime  @default(now())
+
+  workspace     Workspace?      @relation(fields: [workspaceId], references: [id])
+  actorClient   ServiceClient?   @relation(fields: [actorClientId], references: [id])
+  vaultSecret   VaultSecret?     @relation(fields: [vaultSecretId], references: [id])
+  secretVersion SecretVersion?   @relation(fields: [secretVersionId], references: [id])
+}
+
+model SecretLease {
+  id                 String    @id @default(cuid())
+  vaultSecretId      String
+  serviceClientId    String
+  grantedPermissions String
+  issuedAt           DateTime  @default(now())
+  expiresAt          DateTime
+  revokedAt          DateTime?
+  status             String    @default("active")
+  createdAt          DateTime  @default(now())
+}
+
+// R12 in-app KMS: versioned master key ring. Each row is a master key version,
+// wrapped by the root-of-trust (VAULT_MASTER_KEY env var). This enables key
+// rotation without re-deploying: generate a new version, mark it active, retire
+// the old. Existing ciphertext stays decryptable (retired keys are kept);
+// new writes use the active version. A re-wrap migration job moves data keys
+// from old versions to the active one.
+model EncryptionKey {
+  id               String    @id @default(cuid())
+  version          Int       @unique
+  kmsKeyRef        String    @unique
+  wrappedKeyMaterial String
+  status           String    @default("active")
+  createdAt        DateTime  @default(now())
+  retiredAt        DateTime?
+}
