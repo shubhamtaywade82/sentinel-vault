@@ -136,8 +136,9 @@ function DashboardShell() {
       });
       return;
     }
-    // Pick "production" if no workspace selected.
-    if (!workspaceId) {
+    // Pick "production" when nothing is selected, or when the saved selection
+    // no longer exists (deleted, or saved against a different backend).
+    if (!workspaceId || !list.some((w) => w.id === workspaceId)) {
       const prod = list.find((w) => w.slug === "production");
       setWorkspaceId((prod ?? list[0]).id);
     }

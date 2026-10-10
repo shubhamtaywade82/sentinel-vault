@@ -1,7 +1,8 @@
 # Sentinel Vault API
 
-Rails 8.1 API-only backend for Sentinel Vault, replacing the Next.js route handlers in
-`../src/app/api`. The Next.js UI is unchanged; it is not wired to this API yet (phase 6).
+Rails 8.1 API-only backend for Sentinel Vault. The Next.js UI proxies every `/api/v1`
+request here (`../next.config.ts`, `VAULT_API_URL`, default `http://localhost:4781`); the
+legacy route handlers in `../src/app/api` no longer receive traffic and go in phase 7.
 
 ## Run it
 
@@ -11,6 +12,7 @@ Requires Ruby 4.0, PostgreSQL 17.
 bin/setup --skip-server   # installs gems, generates .env with random secrets, prepares the DB
 bin/rails db:seed         # optional demo data; prints client credentials once
 bin/rails server          # http://localhost:4781
+bin/jobs                  # Solid Queue: retries and the every-minute refresh sweep
 bundle exec rspec
 ```
 
@@ -52,22 +54,11 @@ Status per endpoint:
 
 | Endpoint | Status |
 |---|---|
-| `GET health/live`, `GET health/ready`, `GET me` | Done |
-| `GET/POST workspaces` | Done |
-| `GET/POST admin/service_clients`, `POST …/:id/rotate_credential`, `POST …/:id/revoke` | Done |
-| `GET grants`, `POST admin/grants`, `DELETE admin/grants/:id` | Done |
-| `GET/POST secrets`, `GET secrets/:id` | Done |
-| `GET/POST secrets/:id/versions`, `POST …/reveal`, `…/rotate`, `…/revoke`, `…/diff`, `GET …/events` | Done |
-| `GET/POST connections`, `GET …/:id/status`, `POST …/:id/credential`, `POST …/:id/revoke` | Done (no provider calls) |
-| `GET audit_events` | Done |
-| `GET audit_events/export` (CSV) | Phase 6 |
-| `POST connections/:id/refresh`, `…/reauthorize`, `…/recover`, `GET rotation_runs[/:id]` | Phase 5: refresh engine, Solid Queue jobs |
-| `POST internal/watchdog` | Phase 5: replaced by a recurring Solid Queue job |
-| `GET/POST secrets/:id/leases`, `GET leases`, `DELETE leases/:id`, `GET secrets/:id/usage` | Phase 5 |
-| `dashboard/*` (stats, provider-health, client-preview, compliance, expiring-leases, audit-activity, anomalies, remediate) | Phase 6 |
+| Every call in `client.ts` | Done, except the rows below |
 | `admin/keys`, `admin/keys/rotate` | Replaced by KMS-managed key rotation; each version stores its `kms_key_ref` |
-| `POST internal/seed`, `GET internal/demo-credentials` | Removed: use `bin/rails db:seed` |
-| `GET openapi.json` | Phase 6 |
+| `POST internal/seed`, `GET internal/demo-credentials` | Removed: use `bin/rails db:seed`; the UI pastes a credential instead |
+| `GET openapi.json` | Not ported: the UI never calls it |
+| `POST internal/watchdog` | Kept for the UI button; the same sweep runs every minute as `RefreshSweepJob` |
 
 ### Intentional differences from the Next.js backend
 
@@ -87,6 +78,17 @@ Status per endpoint:
 | Source IP | Raw `X-Forwarded-For` | `request.remote_ip` (trusted proxies only) |
 | Missing/invalid token on admin routes | `403 admin_required` | `401 unauthorized` (client tokens still get 403) |
 | Plaintext value size | Unbounded | 64 KB; diff limited to 1,000 lines |
+| Dhan "real" refresh | Posts a refresh token to a nonexistent endpoint | `RenewToken`, falling back to PIN + TOTP `generateAccessToken` (per the official SDK) |
+| Generic OAuth token URL | One global `OAUTH_TOKEN_URL` | Per connection (`tokenUrl`, https only, SSRF-guarded) |
+| Reauthorize | Marks the connection healthy without contacting the provider | Real re-authorization, or `manual_reauth_required` |
+| Recover | Invents a 10-minute access expiry | Stores only expiries it is given |
+| Remediate | Overwrites the secret with a random `ROT_…` value | Needs the new value, or a real provider refresh |
+| Refresh while another runs | Returns a placeholder run | `409 rotation_in_progress` |
+| Transient refresh failure | Waits for the next sweep | Solid Queue retry with backoff, capped at 5 attempts |
+| Dashboard reads | Each poll writes an audit row | Not audited (reads only) |
+| Client probing another tenant's id | Not found, not audited | Not found, audited for the owning tenant |
+| CSV export | Formula cells pass through | `=`, `+`, `-`, `@` cells neutralised |
+| Leases | Advisory; can claim any permission | Advisory; cannot exceed the client's grant |
 
 ### Key rotation
 
@@ -102,17 +104,17 @@ Each version stores the `kms_key_ref` that wrapped its data key.
 - **Not built yet**: a resumable re-wrap job that moves data keys onto a new key, so
   an old key can be retired. Needed before retiring any AWS key.
 
-### Cutover blockers (phase 6)
+### Open items
 
-Switching the UI to this API without these changes breaks visible features:
-
-| UI feature | Why it breaks | Decision needed |
-|---|---|---|
-| Rotate (`DashboardView.tsx:153`, `SecretsView.tsx:235`) | Sends no `value`; Rails requires one | Prompt for a value in the UI, or generate values for kinds where random is valid |
-| First-load bootstrap (`page.tsx:135`) | Calls `POST internal/seed`, removed | Drop the call; seed with `bin/rails db:seed` |
-| View as Client (`IdentitySwitcherDialog.tsx:53`) | Calls `GET internal/demo-credentials`, removed | Paste a credential from `db:seed` output instead |
-| Admin audit attribution | One shared admin token, so admin actions have no actor | Per-operator identity (e.g. SSO) before production use |
-| Error handling | Missing tokens on admin routes now return 401, not 403 | Treat 401 like 403 in `Status.tsx` / `AuditView.tsx` |
+- **Leases are advisory.** No authorization check reads them, as before. Decide whether a lease
+  should grant time-boxed access before relying on them.
+- **Admin identity.** One shared admin token, so admin actions carry no actor. Needs per-operator
+  identity (e.g. SSO) before production.
+- **Providers against real accounts.** Dhan and OAuth adapters are tested with stubbed HTTP only.
+- **Rate limits behind a proxy.** Limits key on `request.remote_ip`; configure
+  `config.action_dispatch.trusted_proxies` for the production load balancer so clients are not
+  pooled under one address.
+- **Phase 7.** Delete the legacy Next.js handlers, Prisma, SQLite and the Bun watchdog sidecar.
 
 ### Data migration
 
