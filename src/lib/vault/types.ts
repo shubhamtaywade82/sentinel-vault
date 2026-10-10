@@ -60,7 +60,6 @@ export interface ServiceClientRow {
   publicId: string
   name: string
   clientType: ClientType
-  credentialDigest: string
   credentialPrefix: string
   status: ClientStatus
   expiresAt: string | null
@@ -106,6 +105,7 @@ export interface IntegrationConnectionRow {
   authMethod: string
   adapterKey: string
   providerAccountRef: string | null
+  tokenUrl?: string | null
   status: ConnectionStatus
   accessExpiresAt: string | null
   refreshAfter: string | null

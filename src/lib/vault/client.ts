@@ -328,7 +328,7 @@ export const api = {
     ),
 
   // ---- Connection recover (re-arm a reauth_required connection) ----
-  recoverConnection: (id: string, input: { newRefreshToken?: string }) =>
+  recoverConnection: (id: string, input: { newRefreshToken?: string; newAccessToken?: string }) =>
     request<{ connection: IntegrationConnectionRow }>(
       `/api/v1/connections/${id}/recover`,
       { method: 'POST', body: JSON.stringify(input) },

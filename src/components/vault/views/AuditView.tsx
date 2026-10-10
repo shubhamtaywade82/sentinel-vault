@@ -143,6 +143,8 @@ export function AuditView() {
       const err = e as { code?: string; status?: number; message?: string };
       if (err.code === "admin_required" || err.status === 403) {
         toast.error("Export requires admin — exit client view first");
+      } else if (err.status === 401) {
+        toast.error("Export needs a valid admin token — set it in the header");
       } else {
         toast.error(`Export failed: ${err.message ?? "unknown error"}`);
       }

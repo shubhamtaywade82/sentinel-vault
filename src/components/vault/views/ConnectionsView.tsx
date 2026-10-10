@@ -124,11 +124,14 @@ export function ConnectionsView() {
     },
     onError: (e) => toast.error(`Revoke failed: ${(e as Error).message}`),
   });
+  // Dhan issues no refresh tokens; its recovery material is a new access token.
+  const recoverUsesAccessToken = recoverTarget?.adapterKey === "dhan_v1";
   const recoverM = useMutation({
-    mutationFn: (input: { id: string; newRefreshToken?: string }) =>
-      api.recoverConnection(input.id, {
-        newRefreshToken: input.newRefreshToken || undefined,
-      }),
+    mutationFn: (input: { id: string; token?: string; isAccessToken: boolean }) =>
+      api.recoverConnection(
+        input.id,
+        input.isAccessToken ? { newAccessToken: input.token } : { newRefreshToken: input.token },
+      ),
     onSuccess: () => {
       toast.success("Connection recovered", {
         description: "Re-armed to active; watchdog will pick up the refresh cycle.",
@@ -444,8 +447,9 @@ export function ConnectionsView() {
                 {recoverTarget?.providerKey}/{recoverTarget?.providerAccountRef ?? recoverTarget?.adapterKey}
               </span>{" "}
               to <span className="font-mono text-emerald-300">active</span> and
-              re-arm the refresh cycle. Optionally provide a new refresh token
-              if the upstream credential was manually re-issued.
+              re-arm the refresh cycle. Optionally provide the{" "}
+              {recoverUsesAccessToken ? "access" : "refresh"} token you
+              re-issued at the provider.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
@@ -453,14 +457,14 @@ export function ConnectionsView() {
               htmlFor="recover-token"
               className="text-[11px] uppercase tracking-wide text-zinc-500"
             >
-              New refresh token (optional)
+              New {recoverUsesAccessToken ? "access" : "refresh"} token (optional)
             </Label>
             <Textarea
               id="recover-token"
               value={recoverToken}
               onChange={(e) => setRecoverToken(e.target.value)}
               rows={3}
-              placeholder="paste new refresh token — will be wrapped via AES-256-GCM and bound to a new secret version"
+              placeholder="paste the new token — encrypted and stored as a new secret version"
               className="border-zinc-800 bg-zinc-950/60 font-mono text-xs text-zinc-200"
             />
             <div className="rounded-md border border-zinc-800 bg-zinc-950/40 px-2.5 py-2 text-[10px] text-zinc-500">
@@ -487,7 +491,8 @@ export function ConnectionsView() {
                 recoverTarget &&
                 recoverM.mutate({
                   id: recoverTarget.id,
-                  newRefreshToken: recoverToken.trim() || undefined,
+                  token: recoverToken.trim() || undefined,
+                  isAccessToken: recoverUsesAccessToken,
                 })
               }
               className="bg-amber-600 text-white hover:bg-amber-500"
