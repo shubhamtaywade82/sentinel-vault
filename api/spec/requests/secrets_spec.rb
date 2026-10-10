@@ -94,6 +94,32 @@ RSpec.describe "Secrets", type: :request do
       expect(SecretAccessEvent.find_by(action: "secret.reveal", outcome: "success").actor_client_id).to eq(client.id)
     end
 
+    it "should not fingerprint the plaintext in an ETag header" do
+      post "/api/v1/secrets/#{secret.id}/reveal?admin_reveal_ok=true", headers: admin_headers, as: :json
+
+      expect(response.headers).not_to have_key("ETag")
+    end
+
+    it "should answer 503 when the key service is unreachable" do
+      secret
+      allow(Encryption.kms).to receive(:decrypt_data_key).and_raise(Seahorse::Client::NetworkingError.new(Net::ReadTimeout.new))
+
+      post "/api/v1/secrets/#{secret.id}/reveal?admin_reveal_ok=true", headers: admin_headers, as: :json
+
+      expect(response).to have_http_status(:service_unavailable)
+      expect(error_code).to eq("provider_unavailable")
+    end
+
+    it "should report a failed audit write to the error tracker" do
+      secret
+      allow(SecretAccessEvent).to receive(:create!).and_raise(ActiveRecord::ConnectionFailed)
+      allow(Rails.error).to receive(:report)
+
+      post "/api/v1/secrets/#{secret.id}/reveal?admin_reveal_ok=true", headers: admin_headers, as: :json
+
+      expect(Rails.error).to have_received(:report).with(ActiveRecord::ConnectionFailed, hash_including(handled: true))
+    end
+
     it "should withhold plaintext when the audit row cannot be written" do
       allow(SecretAccessEvent).to receive(:create!).and_call_original
       allow(SecretAccessEvent).to receive(:create!).with(hash_including(action: "secret.reveal")).and_raise(ActiveRecord::ConnectionFailed)

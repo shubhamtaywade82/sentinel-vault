@@ -24,6 +24,14 @@ RSpec.describe SecretAccessGrant do
     expect(grant).not_to be_valid
   end
 
+  it "should refuse a cross-workspace grant at the database level" do
+    # A rogue writer that skips the model entirely: right workspace on one side only.
+    grant = described_class.new(service_client: client, vault_secret: create(:vault_secret), permissions: "value:read",
+                                workspace_id: client.workspace_id)
+
+    expect { grant.save(validate: false) }.to raise_error(ActiveRecord::InvalidForeignKey, /same_workspace/)
+  end
+
   it "should reject unknown permissions at the database level" do
     grant = described_class.create!(service_client: client, vault_secret: secret, permissions: "value:read")
 

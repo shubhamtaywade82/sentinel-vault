@@ -19,9 +19,13 @@ module Api
         events = SecretAccessEvent.all
         events = events.where(workspace_id: params[:workspaceId]) if params[:workspaceId].present?
         events = events.where(outcome: params[:outcome]) if params[:outcome].present?
-        events = events.where("action LIKE ?", "#{SecretAccessEvent.sanitize_sql_like(params[:action])}%") if params[:action].present?
+        events = events.where("action LIKE ?", "#{SecretAccessEvent.sanitize_sql_like(action_filter)}%") if action_filter.present?
         events
       end
+
+      # params[:action] is always the controller action name; the UI's ?action=
+      # filter is only reachable through the raw query string.
+      def action_filter = request.query_parameters["action"]
     end
   end
 end

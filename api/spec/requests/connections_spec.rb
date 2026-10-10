@@ -78,4 +78,34 @@ RSpec.describe "Connections", type: :request do
     expect(error_code).to eq("validation_failed")
     expect(IntegrationConnection.count).to eq(1)
   end
+
+  it "should create a connection with its bindings and audit it" do
+    params = { workspaceId: workspace.id, providerKey: "dhan", authMethod: "oauth2_refresh", adapterKey: "dhan_v1",
+               accessExpiresAt: 2.hours.from_now.iso8601, bindings: [ { purpose: "access_token", secretId: access_token.id } ] }
+
+    post "/api/v1/connections", params: params, headers: admin_headers, as: :json
+
+    expect(response).to have_http_status(:created)
+    expect(json.dig("connection", "bindings").pluck("purpose", "secretPath")).to eq([ [ "access_token", access_token.path ] ])
+    expect(SecretAccessEvent.where(action: "connection.create")).to exist
+  end
+
+  it "should reject malformed bindings with 422" do
+    params = { workspaceId: workspace.id, providerKey: "dhan", authMethod: "oauth2_refresh", adapterKey: "dhan_v1", bindings: [ "x" ] }
+
+    post "/api/v1/connections", params: params, headers: admin_headers, as: :json
+
+    expect(error_code).to eq("validation_failed")
+  end
+
+  it "should revoke a connection once and refuse credentials afterwards" do
+    post "/api/v1/connections/#{connection.id}/revoke", headers: admin_headers, as: :json
+    expect(json.dig("connection", "status")).to eq("revoked")
+
+    post "/api/v1/connections/#{connection.id}/revoke", headers: admin_headers, as: :json
+    expect(response).to have_http_status(:conflict)
+
+    fetch_credential
+    expect(error_code).to eq("reauthorization_required")
+  end
 end
