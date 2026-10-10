@@ -2,12 +2,12 @@
 // Source of truth: VAULT_CONTRACT.md §3. Do not deviate from field names / types.
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
 }
 
 model Workspace {

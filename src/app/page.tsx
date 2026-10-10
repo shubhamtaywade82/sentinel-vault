@@ -113,7 +113,8 @@ function DashboardShell() {
 
   // Mirror admin token to localStorage so the API client reads it.
   useEffect(() => {
-    syncAdminTokenToLocalStorage(adminToken);
+    // Live state, not the closure: the first render's value predates rehydrate.
+    syncAdminTokenToLocalStorage(useVaultStore.getState().adminToken);
   }, [adminToken]);
 
   // Bootstrap: list workspaces, seed if empty, pick production if possible.

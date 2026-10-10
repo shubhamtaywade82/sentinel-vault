@@ -13,7 +13,7 @@
 // reliable record. Ordinary telemetry (`recordEvent`) keeps the best-effort
 // swallow behaviour so a flaky DB doesn't take down list/read endpoints.
 
-import { Prisma } from '@prisma/client'
+import { Prisma } from '@/generated/prisma/client'
 import { db } from '@/lib/db'
 import { VaultError } from './errors'
 import type { Outcome } from './types'

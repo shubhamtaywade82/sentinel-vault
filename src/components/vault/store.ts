@@ -82,6 +82,9 @@ export const useVaultStore = create<VaultState>()(
     }),
     {
       name: "sentinel-vault-store",
+      // Server has no localStorage; hydrating at store creation makes the
+      // first client render differ from SSR. Providers rehydrates after mount.
+      skipHydration: true,
       partialize: (s) => ({
         workspaceId: s.workspaceId,
         adminToken: s.adminToken,

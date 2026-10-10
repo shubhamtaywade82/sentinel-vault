@@ -62,3 +62,6 @@ r*-dashboard.png
 r*-final.png
 r*-panels.png
 polish-*.png
+
+# Prisma 7 generated client
+/src/generated/
