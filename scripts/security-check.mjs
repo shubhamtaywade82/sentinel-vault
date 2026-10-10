@@ -2,17 +2,17 @@
 // scripts/security-check.mjs
 //
 // Security regression tests for Sentinel Vault (R12 hardening).
-// Runs negative + positive tests against the running vault API on :3000.
+// Runs negative + positive tests against the running vault API on :4750.
 // Exits non-zero if any check fails.
 //
 // Usage:
 //   bun scripts/security-check.mjs
 //
-// Requires the dev server running on http://localhost:3000 with the demo data
+// Requires the dev server running on http://localhost:4750 with the demo data
 // seeded (POST /api/v1/internal/seed). The admin token is read from
 // VAULT_ADMIN_TOKEN or defaults to the demo token.
 
-const VAULT_URL = process.env.VAULT_URL || 'http://localhost:3000'
+const VAULT_URL = process.env.VAULT_URL || 'http://localhost:4750'
 const ADMIN_TOKEN = process.env.VAULT_ADMIN_TOKEN || 'vault-admin-demo-token-CHANGE-ME'
 
 let pass = 0

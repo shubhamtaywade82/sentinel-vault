@@ -191,7 +191,7 @@ export function validateOutboundUrl(
     return { ok: false, reason: `unsupported scheme: ${scheme}` }
   }
   // In production we require https. In dev we allow http (so the test suite
-  // can hit http://localhost:3000/... adapters without TLS).
+  // can hit http://localhost:4750/... adapters without TLS).
   if (scheme === 'http:' && isProduction()) {
     return { ok: false, reason: 'http: scheme forbidden in production (use https:)' }
   }

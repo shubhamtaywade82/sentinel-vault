@@ -1,5 +1,5 @@
 // Frontend API client for Sentinel Vault. Uses relative paths to /api/v1/*.
-// The browser requests go through the Next.js dev server (port 3000) directly.
+// The browser requests go through the Next.js dev server (port 4750) directly.
 // Used by the dashboard UI. Never imports server-only code.
 
 import type {

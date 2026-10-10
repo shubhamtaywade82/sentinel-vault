@@ -5,7 +5,7 @@
 const PORT = 3030; // SPEC: fixed port, never process.env.PORT
 const VAULT_ADMIN_TOKEN =
   process.env.VAULT_ADMIN_TOKEN ?? "vault-admin-demo-token-CHANGE-ME";
-const VAULT_URL = process.env.VAULT_URL ?? "http://localhost:3000";
+const VAULT_URL = process.env.VAULT_URL ?? "http://localhost:4750";
 const WATCHDOG_INTERVAL_MS = Number(process.env.WATCHDOG_INTERVAL_MS ?? 20000);
 const WARMUP_MS = 3000;
 const RING_MAX = 50;
