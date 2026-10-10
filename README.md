@@ -19,6 +19,9 @@ bundle exec rspec
 Open http://localhost:4750 and set the admin token (`VAULT_ADMIN_TOKEN` in `.env`) from the
 header badge.
 
+Connecting a bot or app to fetch its secrets: see [docs/CLIENT_GUIDE.md](docs/CLIENT_GUIDE.md)
+(curl, Ruby and TypeScript).
+
 ## Configuration
 
 Every variable is required in every environment. There are no defaults in code, and the
