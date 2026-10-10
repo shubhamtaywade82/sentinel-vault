@@ -4,8 +4,16 @@ default: &default
   max_connections: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
 
 development:
-  <<: *default
-  database: sentinel_vault_development
+  primary:
+    <<: *default
+    database: sentinel_vault_development
+  # Solid Queue's own database, as in production, so bin/jobs runs locally.
+  queue:
+    <<: *default
+    database: sentinel_vault_development_queue
+    migrations_paths: db/queue_migrate
+    # Solid Queue ships a Ruby schema; only the primary needs structure.sql.
+    schema_format: ruby
 
 test:
   <<: *default
@@ -20,7 +28,9 @@ production:
     <<: *primary_production
     url: <%= ENV["CACHE_DATABASE_URL"] %>
     migrations_paths: db/cache_migrate
+    schema_format: ruby
   queue:
     <<: *primary_production
     url: <%= ENV["QUEUE_DATABASE_URL"] %>
     migrations_paths: db/queue_migrate
+    schema_format: ruby

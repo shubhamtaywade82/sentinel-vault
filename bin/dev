@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+# Starts the API (4781), Solid Queue workers and the Next.js UI (4750) together.
+
+if ! gem list foreman -i --silent; then
+  echo "Installing foreman..."
+  gem install foreman
+fi
+
+if [ ! -d frontend/node_modules ]; then
+  echo "Installing frontend dependencies..."
+  (cd frontend && bun install)
+fi
+
+exec foreman start -f Procfile.dev "$@"

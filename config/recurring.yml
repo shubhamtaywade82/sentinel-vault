@@ -14,7 +14,10 @@ production:
     command: "SolidQueue::Job.clear_finished_in_batches(sleep_between_batches: 0.3)"
     schedule: every hour at minute 12
   # Replaces the Bun watchdog sidecar: refresh connections whose refresh_after has passed.
-  refresh_due_connections:
+  refresh_due_connections: &refresh_due_connections
     class: RefreshSweepJob
     queue: default
     schedule: every minute
+
+development:
+  refresh_due_connections: *refresh_due_connections

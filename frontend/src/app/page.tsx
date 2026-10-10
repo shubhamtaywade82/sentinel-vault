@@ -118,7 +118,7 @@ function DashboardShell() {
   }, [adminToken]);
 
   // Bootstrap: list workspaces and pick production if possible. Demo data comes
-  // from `bin/rails db:seed` in api/; the API has no seed endpoint.
+  // from `bin/rails db:seed` at the repo root; the API has no seed endpoint.
   const bootstrappedRef = useRef(false);
   const workspacesQ = useQuery({
     queryKey: ["workspaces"],
@@ -132,7 +132,7 @@ function DashboardShell() {
     if (list.length === 0) {
       bootstrappedRef.current = true;
       toast.info("No workspaces yet", {
-        description: "Create one under Workspaces, or run bin/rails db:seed in api/ for demo data.",
+        description: "Create one under Workspaces, or run bin/rails db:seed at the repo root for demo data.",
       });
       return;
     }

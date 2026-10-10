@@ -6,3 +6,10 @@ inherit_gem: { rubocop-rails-omakase: rubocop.yml }
 # # Use `[a, [b, c]]` not `[ a, [ b, c ] ]`
 # Layout/SpaceInsideArrayLiteralBrackets:
 #   Enabled: false
+
+AllCops:
+  Exclude:
+    # The Next.js UI has its own toolchain; its node_modules can ship .rb files.
+    - "frontend/**/*"
+    - "vendor/**/*"
+    - "tmp/**/*"

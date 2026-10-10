@@ -1,20 +1,23 @@
-# Sentinel Vault API
+# Sentinel Vault
 
-Rails 8.1 API-only backend for Sentinel Vault. The Next.js UI proxies every `/api/v1`
-request here (`../next.config.ts`, `VAULT_API_URL`, default `http://localhost:4781`); the
-legacy route handlers in `../src/app/api` no longer receive traffic and go in phase 7.
+A Rails 8.1 API (repo root) behind a Next.js operations UI (`frontend/`). The UI proxies
+every `/api/v1` request to Rails (`frontend/next.config.ts`, `VAULT_API_URL`, default
+`http://localhost:4781`); the legacy route handlers in `frontend/src/app/api` no longer
+receive traffic and go in phase 7.
 
 ## Run it
 
-Requires Ruby 4.0, PostgreSQL 17.
+Requires Ruby 4.0, PostgreSQL 17, Bun.
 
 ```bash
-bin/setup --skip-server   # installs gems, generates .env with random secrets, prepares the DB
+bin/setup --skip-server   # gems, frontend packages, .env with random secrets, databases
 bin/rails db:seed         # optional demo data; prints client credentials once
-bin/rails server          # http://localhost:4781
-bin/jobs                  # Solid Queue: retries and the every-minute refresh sweep
+bin/dev                   # API :4781 + Solid Queue workers + UI :4750 (Procfile.dev)
 bundle exec rspec
 ```
+
+Open http://localhost:4750 and set the admin token (`VAULT_ADMIN_TOKEN` in `.env`) from the
+header badge.
 
 ## Configuration
 

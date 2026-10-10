@@ -1,0 +1,3 @@
+web: bin/rails server -p 4781
+jobs: bin/jobs
+frontend: cd frontend && bun run dev

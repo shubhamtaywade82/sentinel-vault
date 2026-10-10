@@ -33,3 +33,6 @@
 # Ignore Docker-related files
 /.dockerignore
 /Dockerfile*
+
+# The UI is built and deployed separately.
+/frontend

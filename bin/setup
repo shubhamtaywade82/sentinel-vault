@@ -16,6 +16,7 @@ FileUtils.chdir APP_ROOT do
 
   puts "== Installing dependencies =="
   system("bundle check") || system!("bundle install")
+  system!("bun install", chdir: "frontend")
 
   # Secrets are generated per machine, never committed and never defaulted in code.
   unless File.exist?(".env")

@@ -1,14 +1,1 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
-User-agent: *
-Allow: /
+# See https://www.robotstxt.org/robotstxt.html for documentation on how to use the robots.txt file
