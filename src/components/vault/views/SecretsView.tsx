@@ -231,8 +231,8 @@ export function SecretsView() {
     onError: (e) => toast.error(`Version create failed: ${(e as Error).message}`),
   });
   const rotateM = useMutation({
-    mutationFn: (input: { id: string; expiresInHours?: number }) =>
-      api.rotateSecret(input.id, { expiresInHours: input.expiresInHours }),
+    mutationFn: (input: { id: string; value: string; expiresInHours?: number }) =>
+      api.rotateSecret(input.id, { value: input.value, expiresInHours: input.expiresInHours }),
     onSuccess: () => {
       toast.success("Secret rotated");
       setRotateTarget(null);
@@ -561,9 +561,9 @@ export function SecretsView() {
         secret={rotateTarget}
         onOpenChange={(o) => !o && setRotateTarget(null)}
         pending={rotateM.isPending}
-        onSubmit={(expiresInHours) =>
+        onSubmit={(value, expiresInHours) =>
           rotateTarget &&
-          rotateM.mutate({ id: rotateTarget.id, expiresInHours })
+          rotateM.mutate({ id: rotateTarget.id, value, expiresInHours })
         }
       />
 
@@ -1431,11 +1431,18 @@ function RotateDialog({
   secret: SecretListItem | null;
   onOpenChange: (o: boolean) => void;
   pending: boolean;
-  onSubmit: (expiresInHours?: number) => void;
+  onSubmit: (value: string, expiresInHours?: number) => void;
 }) {
+  const [value, setValue] = useState("");
   const [expiresInHours, setExpiresInHours] = useState<number | "">(24);
   return (
-    <Dialog open={!!secret} onOpenChange={onOpenChange}>
+    <Dialog
+      open={!!secret}
+      onOpenChange={(open) => {
+        if (!open) setValue("");
+        onOpenChange(open);
+      }}
+    >
       <DialogContent className="border-zinc-800 bg-zinc-900 text-zinc-100 sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-zinc-100">
@@ -1444,13 +1451,22 @@ function RotateDialog({
           </DialogTitle>
           <DialogDescription className="text-zinc-400">
             Generate a new version of{" "}
-            <span className="font-mono text-zinc-300">{secret?.path}</span>. If
-            no value is supplied, the backend generates a random value. Audit
-            event{" "}
+            <span className="font-mono text-zinc-300">{secret?.path}</span>{" "}
+            with the new credential you obtained from its provider. The vault
+            never invents a value. Audit event{" "}
             <span className="font-mono text-zinc-400">secret.rotate</span> is
             recorded.
           </DialogDescription>
         </DialogHeader>
+        <Field label="New value">
+          <Textarea
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            autoComplete="off"
+            spellCheck={false}
+            className="font-mono text-xs"
+          />
+        </Field>
         <Field label="Expires in (hours)">
           <Input
             type="number"
@@ -1472,9 +1488,10 @@ function RotateDialog({
             Cancel
           </Button>
           <Button
-            disabled={pending}
+            disabled={pending || value.trim() === ""}
             onClick={() =>
               onSubmit(
+                value,
                 expiresInHours === "" ? undefined : Number(expiresInHours),
               )
             }

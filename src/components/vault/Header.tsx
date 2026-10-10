@@ -282,8 +282,20 @@ export function Header() {
 
 function HealthBadge() {
   const adminToken = useVaultStore((s) => s.adminToken);
+  const setAdminToken = useVaultStore((s) => s.setAdminToken);
   const authMode = useVaultStore((s) => s.authMode);
+  const qc = useQueryClient();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
   const adminSet = !!adminToken;
+
+  function save() {
+    setAdminToken(draft.trim());
+    setDraft("");
+    setEditing(false);
+    qc.invalidateQueries();
+  }
+
   if (authMode === "client") {
     return (
       <div
@@ -296,21 +308,72 @@ function HealthBadge() {
     );
   }
   return (
-    <div
-      className="ml-1 hidden items-center gap-1 rounded-md border border-zinc-800 bg-zinc-900/60 px-2 py-1 text-[10px] font-mono text-zinc-400 lg:flex"
-      title="Admin token presence"
-    >
-      {adminSet ? (
-        <>
-          <Activity className="size-3 text-emerald-400" />
-          admin-token set
-        </>
-      ) : (
-        <>
-          <AlertTriangle className="size-3 text-amber-400" />
-          no admin token
-        </>
+    <>
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        className="ml-1 flex items-center gap-1 rounded-md border border-zinc-800 bg-zinc-900/60 px-2 py-1 text-[10px] font-mono text-zinc-400 hover:bg-zinc-800"
+        title="Set the vault admin token (VAULT_ADMIN_TOKEN of the API)"
+      >
+        {adminSet ? (
+          <>
+            <Activity className="size-3 text-emerald-400" />
+            admin-token set
+          </>
+        ) : (
+          <>
+            <AlertTriangle className="size-3 text-amber-400" />
+            set admin token
+          </>
+        )}
+      </button>
+      {editing && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm"
+          onClick={() => setEditing(false)}
+        >
+          <form
+            className="vault-card w-full max-w-sm rounded-lg border-zinc-800 bg-zinc-900 p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={(e) => {
+              e.preventDefault();
+              save();
+            }}
+          >
+            <label htmlFor="admin-token" className="mb-1 block text-xs font-semibold text-zinc-100">
+              Admin token
+            </label>
+            <p className="mb-3 text-[11px] text-zinc-500">
+              The API&apos;s VAULT_ADMIN_TOKEN. Kept in this browser only.
+            </p>
+            <input
+              id="admin-token"
+              type="password"
+              autoComplete="off"
+              autoFocus
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              className="mb-3 h-9 w-full rounded-md border border-zinc-800 bg-zinc-950 px-2 font-mono text-xs text-zinc-100"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setEditing(false)}
+                className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={draft.trim() === ""}
+                className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+              >
+                Save
+              </button>
+            </div>
+          </form>
+        </div>
       )}
-    </div>
+    </>
   );
 }

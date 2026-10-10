@@ -117,28 +117,23 @@ function DashboardShell() {
     syncAdminTokenToLocalStorage(useVaultStore.getState().adminToken);
   }, [adminToken]);
 
-  // Bootstrap: list workspaces, seed if empty, pick production if possible.
-  const seededRef = useRef(false);
+  // Bootstrap: list workspaces and pick production if possible. Demo data comes
+  // from `bin/rails db:seed` in api/; the API has no seed endpoint.
+  const bootstrappedRef = useRef(false);
   const workspacesQ = useQuery({
     queryKey: ["workspaces"],
     queryFn: () => api.listWorkspaces(),
   });
 
   useEffect(() => {
-    if (workspacesQ.status === "pending" || seededRef.current) return;
+    if (workspacesQ.status === "pending" || bootstrappedRef.current) return;
     if (workspacesQ.status === "error") return;
     const list = workspacesQ.data?.workspaces ?? [];
     if (list.length === 0) {
-      seededRef.current = true;
-      (async () => {
-        try {
-          await api.seed();
-          toast.success("Vault seeded with demo data");
-          qc.invalidateQueries({ queryKey: ["workspaces"] });
-        } catch {
-          // Backend not ready — fail silently, the dashboard handles 404s.
-        }
-      })();
+      bootstrappedRef.current = true;
+      toast.info("No workspaces yet", {
+        description: "Create one under Workspaces, or run bin/rails db:seed in api/ for demo data.",
+      });
       return;
     }
     // Pick "production" if no workspace selected.
@@ -146,7 +141,7 @@ function DashboardShell() {
       const prod = list.find((w) => w.slug === "production");
       setWorkspaceId((prod ?? list[0]).id);
     }
-    seededRef.current = true;
+    bootstrappedRef.current = true;
   }, [workspacesQ.status, workspacesQ.data, workspaceId, setWorkspaceId, qc]);
 
   // When entering client view, the workspace selector is locked to the

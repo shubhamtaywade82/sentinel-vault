@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { UserCog } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -48,12 +48,6 @@ export function IdentitySwitcherDialog({
   const [pasteName, setPasteName] = useState("");
   const [pastePublicId, setPastePublicId] = useState("");
 
-  const demoQ = useQuery({
-    queryKey: ["demo-credentials"],
-    queryFn: () => api.listDemoCredentials(),
-    enabled: open,
-    staleTime: 60_000,
-  });
   const clientsQ = useQuery({
     queryKey: ["clients", workspaceId, 0],
     queryFn: () => api.listClients(workspaceId),
@@ -61,21 +55,11 @@ export function IdentitySwitcherDialog({
     staleTime: 60_000,
   });
 
-  const clientByName = useMemo(() => {
-    const idx = new Map<string, ClientListItem>();
-    for (const c of clientsQ.data?.clients ?? []) idx.set(c.name, c);
-    return idx;
-  }, [clientsQ.data]);
-
-  function selectClient(name: string, token: string) {
-    const meta = clientByName.get(name);
-    const publicId = meta?.publicId ?? (pastePublicId || "clt_unknown");
-    setClientView(token, name, publicId);
-    onOpenChange(false);
-    qc.invalidateQueries();
-    toast.success(`Now viewing as ${name}`, {
-      description: `Least-privilege preview · ${publicId}`,
-    });
+  // Credentials are shown once at creation and never stored, so the operator
+  // picks a client here and pastes the credential they saved for it.
+  function pickClient(client: ClientListItem) {
+    setPasteName(client.name);
+    setPastePublicId(client.publicId);
   }
 
   function submitPaste() {
@@ -110,63 +94,50 @@ export function IdentitySwitcherDialog({
         <div className="space-y-3">
           <div>
             <Label className="mb-1 block text-[11px] uppercase tracking-wide text-zinc-500">
-              Demo service clients
+              Service clients
             </Label>
             <div className="max-h-64 space-y-1 overflow-y-auto rounded-md border border-zinc-800 bg-zinc-950/40 p-1.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-zinc-700">
-              {demoQ.isLoading ? (
+              {clientsQ.isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <Skeleton key={i} className="h-9 w-full bg-zinc-800/60" />
                 ))
-              ) : demoQ.isError ? (
-                <div className="px-2 py-3 text-xs text-rose-300">
-                  Could not load demo credentials. The backend may still be
-                  warming up — try again.
-                </div>
               ) : (
-                Object.entries(demoQ.data?.clients ?? {}).map(([name, token]) => {
-                  const meta = clientByName.get(name);
-                  return (
-                    <div
-                      key={name}
-                      className="flex items-center justify-between gap-2 rounded-md border border-zinc-800 bg-zinc-900/40 px-2.5 py-1.5 text-xs hover:bg-zinc-800/50"
-                    >
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-mono text-zinc-100">{name}</span>
-                          {meta && (
-                            <Badge
-                              variant="outline"
-                              className="border-zinc-700 bg-zinc-800/40 font-mono text-[9px] uppercase text-zinc-400"
-                            >
-                              {meta.clientType}
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="truncate font-mono text-[10px] text-zinc-500">
-                          {meta?.publicId ?? "—"} ·{" "}
-                          {meta
-                            ? `${meta.grantsCount} grant${meta.grantsCount === 1 ? "" : "s"}`
-                            : "no client metadata"}
-                        </div>
+                (clientsQ.data?.clients ?? []).map((client) => (
+                  <div
+                    key={client.id}
+                    className="flex items-center justify-between gap-2 rounded-md border border-zinc-800 bg-zinc-900/40 px-2.5 py-1.5 text-xs hover:bg-zinc-800/50"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono text-zinc-100">{client.name}</span>
+                        <Badge
+                          variant="outline"
+                          className="border-zinc-700 bg-zinc-800/40 font-mono text-[9px] uppercase text-zinc-400"
+                        >
+                          {client.clientType}
+                        </Badge>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => selectClient(name, token)}
-                        className="h-7 border-amber-700/50 bg-amber-950/40 px-2 text-[11px] text-amber-100 hover:bg-amber-900/50 hover:text-amber-50"
-                      >
-                        View as
-                      </Button>
+                      <div className="truncate font-mono text-[10px] text-zinc-500">
+                        {client.publicId} · {client.grantsCount} grant{client.grantsCount === 1 ? "" : "s"}
+                      </div>
                     </div>
-                  );
-                })
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => pickClient(client)}
+                      className="h-7 border-amber-700/50 bg-amber-950/40 px-2 text-[11px] text-amber-100 hover:bg-amber-900/50 hover:text-amber-50"
+                    >
+                      Select
+                    </Button>
+                  </div>
+                ))
               )}
             </div>
           </div>
 
           <div>
             <Label className="mb-1 block text-[11px] uppercase tracking-wide text-zinc-500">
-              Arbitrary credential (optional)
+              Credential (shown once when the client was created or rotated)
             </Label>
             <div className="space-y-2">
               <div className="grid grid-cols-2 gap-2">

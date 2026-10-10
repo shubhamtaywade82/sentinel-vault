@@ -71,7 +71,7 @@ function getToken(): string {
     if (clientToken) return clientToken
     // Fall through to admin if the client token was somehow cleared.
   }
-  return window.localStorage.getItem('sentinel.adminToken') || 'vault-admin-demo-token-CHANGE-ME'
+  return window.localStorage.getItem('sentinel.adminToken') || ''
 }
 
 function workspaceQuery(workspaceId?: string | null): string {
@@ -217,7 +217,7 @@ export const api = {
     ),
   rotateSecret: (
     id: string,
-    input: { value?: string; expiresInHours?: number },
+    input: { value: string; expiresInHours?: number },
   ) =>
     request<{ version: SecretVersionRow }>(`/api/v1/secrets/${id}/rotate`, {
       method: 'POST',
@@ -359,17 +359,6 @@ export const api = {
   // ---- Internal (admin) ----
   runWatchdog: () =>
     request<WatchdogResponse>('/api/v1/internal/watchdog', { method: 'POST' }),
-  seed: () => request<{ ok: boolean; created: Record<string, number>; credentials: Record<string, string> }>('/api/v1/internal/seed', { method: 'POST' }),
-  /** Returns the demo admin token + the demo service-client credential map.
-   *  Used by the "View as Client" playground so the operator doesn't have to
-   *  copy-paste from a file. Admin-only. DEMO convenience — real client
-   *  credentials are issued once at creation time and never re-readable. */
-  listDemoCredentials: () =>
-    request<{
-      admin: string
-      clients: Record<string, string>
-    }>('/api/v1/internal/demo-credentials'),
-
   // ---- Dashboard ----
   dashboardStats: (workspaceId: string) =>
     request<DashboardStats>(`/api/v1/dashboard/stats${workspaceQuery(workspaceId)}`),
@@ -397,10 +386,10 @@ export const api = {
       `/api/v1/dashboard/audit-activity${qs}${qs ? '&' : '?'}range=${range}`,
     )
   },
-  remediate: (secretId: string, violation: string) =>
+  remediate: (secretId: string, violation: string, value?: string) =>
     request<RemediateResponse>('/api/v1/dashboard/remediate', {
       method: 'POST',
-      body: JSON.stringify({ secretId, violation }),
+      body: JSON.stringify({ secretId, violation, value }),
     }),
 
   // ---- Dashboard: Anomalous Access Detection ----

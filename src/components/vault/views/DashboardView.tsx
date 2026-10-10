@@ -130,34 +130,30 @@ export function DashboardView() {
     | (import("@/lib/vault/types").AnomalyRow)
     | null
   >(null);
+  // Empty means "let the provider refresh it"; the API refuses that for
+  // secrets no provider manages, and the error is shown to the operator.
+  const [remediateValue, setRemediateValue] = useState("");
+  const closeRemediate = () => {
+    setRemediateTarget(null);
+    setRemediateValue("");
+  };
   const remediateM = useMutation({
     mutationFn: () =>
-      api.remediate(remediateTarget!.secretId, remediateTarget!.violation),
+      api.remediate(
+        remediateTarget!.secretId,
+        remediateTarget!.violation,
+        remediateValue.trim() === "" ? undefined : remediateValue,
+      ),
     onSuccess: (res) => {
       toast.success(
         `Remediated "${remediateTarget?.path}" — new version ${res.version.versionNumber} created`,
       );
-      setRemediateTarget(null);
+      closeRemediate();
       qc.invalidateQueries({ queryKey: ["compliance"] });
       qc.invalidateQueries({ queryKey: ["secrets"] });
       qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
     },
     onError: (e) => toast.error(`Remediation failed: ${(e as Error).message}`),
-  });
-
-  // R9: inline action button — rotate a secret directly from the Expiry
-  // Timeline. Only timeline items with kind === "secret" render the button;
-  // connection expiries use the Refresh button in Connection Health instead.
-  const rotateM = useMutation({
-    mutationFn: (vars: { id: string; ref: string }) =>
-      api.rotateSecret(vars.id, {}),
-    onSuccess: (_data, vars) => {
-      toast.success(`Rotated ${vars.ref}`);
-      qc.invalidateQueries({ queryKey: ["secrets"] });
-      qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
-      qc.invalidateQueries({ queryKey: ["compliance"] });
-    },
-    onError: (e) => toast.error(`Rotation failed: ${(e as Error).message}`),
   });
 
   // R9: inline action button — revoke a lease directly from Expiring Leases.
@@ -471,9 +467,10 @@ export function DashboardView() {
                         className="vault-action-btn opacity-0 transition-opacity duration-150 group-hover:opacity-100"
                         onClick={(e) => {
                           e.stopPropagation();
-                          rotateM.mutate({ id: t.id, ref: t.ref });
+                          // Rotation needs a real new value (or a provider
+                          // refresh), so it goes through the remediate dialog.
+                          setRemediateTarget({ secretId: t.id, path: t.ref, violation: "expiring_soon" });
                         }}
-                        disabled={rotateM.isPending}
                         title="Rotate this secret now"
                       >
                         <RotateCw className="size-3 text-emerald-400" />
@@ -1099,7 +1096,7 @@ export function DashboardView() {
       {remediateTarget && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm"
-          onClick={() => !remediateM.isPending && setRemediateTarget(null)}
+          onClick={() => !remediateM.isPending && closeRemediate()}
         >
           <div
             className="vault-card w-full max-w-md rounded-lg border-zinc-800 bg-zinc-900 p-6 shadow-2xl"
@@ -1110,22 +1107,33 @@ export function DashboardView() {
               Remediate Compliance Violation
             </h2>
             <p className="mb-4 text-xs text-zinc-400">
-              This will generate a new value for{" "}
+              Store a new credential for{" "}
               <span className="font-mono text-amber-300">{remediateTarget.path}</span>{" "}
-              and create a new immutable version, retiring the current one. The
-              violation type{" "}
+              as a new immutable version, retiring the current one, to resolve{" "}
               <span className="font-mono text-amber-300">
                 {remediateTarget.violation.replace(/_/g, " ")}
-              </span>{" "}
-              will be resolved.
+              </span>
+              .
             </p>
-            <div className="mb-4 rounded-md border border-amber-700/30 bg-amber-950/20 px-3 py-2 text-[11px] text-amber-200">
-              <strong>Demo only:</strong> in production, remediation would trigger
-              a real provider-side rotation + operator approval workflow.
-            </div>
+            <label className="mb-1 block text-[11px] uppercase tracking-wide text-zinc-500" htmlFor="remediate-value">
+              New value
+            </label>
+            <textarea
+              id="remediate-value"
+              value={remediateValue}
+              onChange={(e) => setRemediateValue(e.target.value)}
+              autoComplete="off"
+              spellCheck={false}
+              rows={3}
+              className="mb-2 w-full rounded-md border border-zinc-800 bg-zinc-950 px-2 py-1.5 font-mono text-xs text-zinc-100"
+            />
+            <p className="mb-4 text-[11px] text-zinc-500">
+              Leave empty for an access token kept fresh by a provider
+              connection: the provider issues the new one.
+            </p>
             <div className="flex justify-end gap-2">
               <button
-                onClick={() => setRemediateTarget(null)}
+                onClick={closeRemediate}
                 disabled={remediateM.isPending}
                 className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 disabled:opacity-50"
               >

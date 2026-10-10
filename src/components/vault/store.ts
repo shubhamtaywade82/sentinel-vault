@@ -41,7 +41,8 @@ export const useVaultStore = create<VaultState>()(
     (set) => ({
       view: "dashboard",
       workspaceId: "",
-      adminToken: "vault-admin-demo-token-CHANGE-ME",
+      // No default: the API refuses any token it did not generate.
+      adminToken: "",
       refreshTick: 0,
       authMode: "admin",
       clientToken: null,
