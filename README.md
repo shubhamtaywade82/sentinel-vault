@@ -84,7 +84,7 @@ Status per endpoint:
 | Source IP | Raw `X-Forwarded-For` | `request.remote_ip` (trusted proxies only) |
 | Missing/invalid token on admin routes | `403 admin_required` | `401 unauthorized` (client tokens still get 403) |
 | Plaintext value size | Unbounded | 64 KB; diff limited to 1,000 lines |
-| Dhan "real" refresh | Posts a refresh token to a nonexistent endpoint | `RenewToken`, falling back to PIN + TOTP `generateAccessToken` (per the official SDK) |
+| Dhan "real" refresh | Posts a refresh token to a nonexistent endpoint | `DhanHQ::Auth` (gem ≥ 4.1.1): `RenewToken`, falling back to PIN + TOTP `generateAccessToken` |
 | Generic OAuth token URL | One global `OAUTH_TOKEN_URL` | Per connection (`tokenUrl`, https only, SSRF-guarded) |
 | Reauthorize | Marks the connection healthy without contacting the provider | Real re-authorization, or `manual_reauth_required` |
 | Recover | Invents a 10-minute access expiry | Stores only expiries it is given |

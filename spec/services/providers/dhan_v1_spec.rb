@@ -7,8 +7,10 @@ RSpec.describe Providers::DhanV1 do
 
   def refresh = described_class.refresh(connection, credentials_for(connection))
 
+  let(:renew_url) { "https://api.dhan.co/v2/RenewToken" }
+
   def stub_renew(status:, body: {})
-    stub_request(:get, described_class::RENEW_URL)
+    stub_request(:get, renew_url)
       .with(headers: { "access-token" => "old-token", "dhanClientId" => "1100" })
       .to_return(status: status, body: body.to_json)
   end
@@ -46,6 +48,21 @@ RSpec.describe Providers::DhanV1 do
 
     expect(refresh.error_code).to eq("transient")
     expect(a_request(:post, /generateAccessToken/)).not_to have_been_made
+  end
+
+  it "should back off on rate limits and treat timeouts as transient" do
+    bind_secrets(connection, "client_id" => "1100", "access_token" => "old-token")
+
+    stub_renew(status: 429)
+    expect(refresh.error_code).to eq("rate_limited")
+
+    stub_request(:get, renew_url).to_timeout
+    expect(refresh.error_code).to eq("transient")
+  end
+
+  it "should use the shorter vault timeouts for Dhan auth calls" do
+    expect(ENV.fetch("DHAN_CONNECT_TIMEOUT")).to eq("3")
+    expect(ENV.fetch("DHAN_READ_TIMEOUT")).to eq("10")
   end
 
   it "should fall back to Dhan's documented 24h validity when expiryTime is missing" do

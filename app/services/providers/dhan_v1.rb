@@ -1,10 +1,10 @@
 module Providers
   # Dhan has no refresh tokens. A live access token is renewed with RenewToken;
-  # once it has lapsed, a new one is generated from the account PIN and a TOTP
-  # code (endpoints as used by the official dhanhq SDK, auth.py).
+  # Dhan refuses to renew a lapsed one, so the fallback is a fresh token from the
+  # account PIN and a TOTP code. Both calls go through DhanHQ::Auth (DhanHQ gem
+  # >= 4.1.1). Dhan's hosts are fixed, so the admin-URL guard in OutboundHttp
+  # is not needed here.
   module DhanV1
-    RENEW_URL = "https://api.dhan.co/v2/RenewToken".freeze
-    GENERATE_URL = "https://auth.dhan.co/app/generateAccessToken".freeze
     # Dhan documents 24h validity; used only when a response omits expiryTime.
     DEFAULT_VALIDITY = 24.hours
     # Dhan reports expiryTime in Indian Standard Time without an offset.
@@ -30,25 +30,32 @@ module Providers
       client_id, pin, seed = credentials["client_id"], credentials["pin"], credentials["totp_seed"]
       return Result.failure("invalid_grant") if [ client_id, pin, seed ].any?(&:blank?)
 
-      Providers.guarded do
-        query = URI.encode_www_form(dhanClientId: client_id, pin: pin, totp: ROTP::TOTP.new(seed).now)
-        interpret(OutboundHttp.call(:post, "#{GENERATE_URL}?#{query}"))
+      dhan_call do
+        DhanHQ::Auth.generate_access_token(dhan_client_id: client_id, pin: pin, totp: DhanHQ::Auth.generate_totp(seed))
       end
     rescue ROTP::Base32::Base32Error
       Result.failure("invalid_grant")
     end
 
     def renew(client_id, access_token)
-      Providers.guarded do
-        interpret(OutboundHttp.call(:get, RENEW_URL, headers: { "access-token" => access_token, "dhanClientId" => client_id }))
-      end
+      dhan_call { DhanHQ::Auth.renew_token(access_token: access_token, client_id: client_id) }
     end
 
-    def interpret(response)
-      return Providers.failure_for_status(response.status) unless response.status == 200
+    # Maps DhanHQ::Auth's typed failures onto the refresh engine's retry classes.
+    def dhan_call
+      issued(yield)
+    rescue DhanHQ::RateLimitError
+      Result.failure("rate_limited")
+    rescue DhanHQ::InternalServerError, DhanHQ::NetworkError
+      Result.failure("transient")
+    rescue DhanHQ::InvalidAuthenticationError
+      Result.failure("invalid_grant")
+    rescue DhanHQ::Error
+      Result.failure("provider_error")
+    end
 
-      body = response.json || {}
-      token = body["accessToken"] || body["access_token"]
+    def issued(body)
+      token = body["accessToken"]
       return Result.failure("provider_error") if token.blank?
 
       Result.success("access_token" => { value: token, expires_at: parse_expiry(body["expiryTime"]) })

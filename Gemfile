@@ -19,7 +19,9 @@ gem "solid_queue"
 
 # Production data-key protection; the local provider is refused in production.
 gem "aws-sdk-kms", "~> 1.0"
-# RFC 6238 codes for Dhan's PIN + TOTP token generation.
+# Dhan token renewal and PIN + TOTP generation (DhanHQ::Auth).
+gem "DhanHQ", "~> 4.1.1"
+# Malformed TOTP seeds surface as ROTP errors, which the Dhan provider rescues.
 gem "rotp", "~> 6.3"
 # Bundled gem since Ruby 3.4; audit log export.
 gem "csv"
